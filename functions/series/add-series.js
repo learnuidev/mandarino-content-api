@@ -5,6 +5,9 @@ const { removeNull } = require("../../libs/utils");
 const { getSourceById } = require("../../modules/sources/get-source-by-id");
 const { tableNames } = require("../../constants/table-names");
 const { getUserByEmail } = require("../../modules/users/get-user-by-email");
+const {
+  getUserAssetById,
+} = require("../../modules/assets/get-user-asset-by-id");
 const { ulid } = require("ulid");
 
 const dynamodb = new AWS.DynamoDB.DocumentClient({
@@ -39,6 +42,19 @@ module.exports.handler = middy(async (event) => {
           message: "Source not found",
         }),
       };
+    }
+
+    if (backgroundImageAssetId) {
+      const asset = await getUserAssetById(backgroundImageAssetId);
+
+      if (!asset) {
+        return {
+          statusCode: 404,
+          body: JSON.stringify({
+            message: "Background image asset not found",
+          }),
+        };
+      }
     }
 
     const id = ulid();

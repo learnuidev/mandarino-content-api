@@ -1,6 +1,7 @@
 const AWS = require("aws-sdk");
 const middy = require("@middy/core");
 const cors = require("@middy/http-cors");
+const { tableNames } = require("../../constants/table-names");
 
 const dynamodb = new AWS.DynamoDB.DocumentClient({
   apiVersion: "2012-08-10",
@@ -12,11 +13,8 @@ module.exports.handler = middy(async (event) => {
   const userId = event.requestContext.authorizer.claims.email;
 
   try {
-    const { SERIES_TABLE, SERIES_CONTENTS_TABLE, LEGACY_CONTENTS_TABLE } =
-      process.env;
-
     const seriesParams = {
-      TableName: SERIES_TABLE,
+      TableName: tableNames.seriesTable,
       Key: { id: seriesId },
     };
 
@@ -41,7 +39,7 @@ module.exports.handler = middy(async (event) => {
     }
 
     const episodesParams = {
-      TableName: SERIES_CONTENTS_TABLE,
+      TableName: tableNames.seriesContentsTable,
       IndexName: "bySk",
       KeyConditionExpression: "sk = :sk",
       ExpressionAttributeValues: {
@@ -51,28 +49,11 @@ module.exports.handler = middy(async (event) => {
 
     const episodesResult = await dynamodb.query(episodesParams).promise();
 
-    const episodes = await Promise.all(
-      (episodesResult.Items || []).map(async (episode) => {
-        if (episode.contentId) {
-          const contentParams = {
-            TableName: LEGACY_CONTENTS_TABLE,
-            Key: { id: episode.contentId },
-          };
-          const contentResult = await dynamodb.get(contentParams).promise();
-          return {
-            ...episode,
-            content: contentResult.Item,
-          };
-        }
-        return episode;
-      }),
-    );
-
     return {
       statusCode: 200,
       body: JSON.stringify({
         series: seriesResult.Item,
-        episodes,
+        episodes: episodesResult,
       }),
     };
   } catch (err) {

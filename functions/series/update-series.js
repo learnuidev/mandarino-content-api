@@ -4,6 +4,9 @@ const cors = require("@middy/http-cors");
 const { removeNull } = require("../../libs/utils");
 const { getUserByEmail } = require("../../modules/users/get-user-by-email");
 const { getSourceById } = require("../../modules/sources/get-source-by-id");
+const {
+  getUserAssetById,
+} = require("../../modules/assets/get-user-asset-by-id");
 const { tableNames } = require("../../constants/table-names");
 
 const dynamodb = new AWS.DynamoDB.DocumentClient({
@@ -41,6 +44,19 @@ module.exports.handler = middy(async (event) => {
       }
     }
 
+    if (backgroundImageAssetId) {
+      const asset = await getUserAssetById(backgroundImageAssetId);
+
+      if (!asset) {
+        return {
+          statusCode: 404,
+          body: JSON.stringify({
+            message: "Background image asset not found",
+          }),
+        };
+      }
+    }
+
     const updateParams = {
       TableName: tableNames.seriesTable,
       Key: { id },
@@ -73,6 +89,7 @@ module.exports.handler = middy(async (event) => {
     }
 
     if (backgroundImageAssetId) {
+      const asset = await getUserAssetById(backgroundImageAssetId);
       updateParams.UpdateExpression +=
         ", backgroundImageAssetId = :backgroundImageAssetId";
       updateParams.ExpressionAttributeValues[":backgroundImageAssetId"] =

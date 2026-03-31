@@ -71,9 +71,29 @@ functions:
     environment:
       SERIES_TABLE: !Ref SeriesTable
       SERIES_CONTENTS_TABLE: !Ref SeriesContentsTable
-      LEGACY_CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
       SOURCE_TABLE: !Ref SourceTable
       USER_ASSETS_TABLE: ${self:custom.UserAssetsTable.Name}
+
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt SeriesTable.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+        Resource:
+          - !GetAtt SourceTable.Arn
+          - !Join ["/", ["!GetAtt SourceTable.Arn", "index", "*"]]
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - ${self:custom.UserAssetsTable.Arn}
 
   update-series:
     handler: functions/series/update-series.handler
@@ -89,8 +109,27 @@ functions:
     environment:
       SERIES_TABLE: !Ref SeriesTable
       SERIES_CONTENTS_TABLE: !Ref SeriesContentsTable
-      LEGACY_CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
       SOURCE_TABLE: !Ref SourceTable
+      USER_ASSETS_TABLE: ${self:custom.UserAssetsTable.Name}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt SeriesTable.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+        Resource:
+          - !GetAtt SourceTable.Arn
+          - !Join ["/", ["!GetAtt SourceTable.Arn", "index", "*"]]
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - ${self:custom.UserAssetsTable.Arn}
 
   list-series:
     handler: functions/series/list-series.handler
@@ -105,7 +144,20 @@ functions:
             arn: ${self:custom.CognitoUserPool.Arn}
     environment:
       SERIES_TABLE: !Ref SeriesTable
-      LEGACY_CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt SeriesTable.Arn
+          - !Join ["/", ["!GetAtt SeriesTable.Arn", "index", "*"]]
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - ${self:custom.UsersTable.Arn}
+          - !Join ["/", ["${self:custom.UsersTable.Arn}", "index", "*"]]
 
   get-series-details:
     handler: functions/series/get-series-details.handler
@@ -121,7 +173,19 @@ functions:
     environment:
       SERIES_TABLE: !Ref SeriesTable
       SERIES_CONTENTS_TABLE: !Ref SeriesContentsTable
-      LEGACY_CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
+      CONTENT_DETAILS_TABLE: !Ref ContentDetailsTable
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt SeriesTable.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !GetAtt SeriesContentsTable.Arn
+          - !Join ["/", ["!GetAtt SeriesContentsTable.Arn", "index", "*"]]
 
   add-episodes:
     handler: functions/series/add-episodes.handler
@@ -137,7 +201,19 @@ functions:
     environment:
       SERIES_TABLE: !Ref SeriesTable
       SERIES_CONTENTS_TABLE: !Ref SeriesContentsTable
-      LEGACY_CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt SeriesTable.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource:
+          - !GetAtt SeriesContentsTable.Arn
 
   remove-episodes:
     handler: functions/series/remove-episodes.handler
@@ -153,7 +229,18 @@ functions:
     environment:
       SERIES_TABLE: !Ref SeriesTable
       SERIES_CONTENTS_TABLE: !Ref SeriesContentsTable
-      LEGACY_CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt SeriesTable.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource:
+          - !GetAtt SeriesContentsTable.Arn
 
 resources:
   Resources:

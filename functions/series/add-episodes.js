@@ -2,6 +2,7 @@ const AWS = require("aws-sdk");
 const middy = require("@middy/core");
 const cors = require("@middy/http-cors");
 const { removeNull } = require("../../libs/utils");
+const { tableNames } = require("../../constants/table-names");
 
 const dynamodb = new AWS.DynamoDB.DocumentClient({
   apiVersion: "2012-08-10",
@@ -13,11 +14,8 @@ module.exports.handler = middy(async (event) => {
   const userId = event.requestContext.authorizer.claims.email;
 
   try {
-    const { SERIES_TABLE, SERIES_CONTENTS_TABLE, LEGACY_CONTENTS_TABLE } =
-      process.env;
-
     const seriesParams = {
-      TableName: SERIES_TABLE,
+      TableName: tableNames.seriesTable,
       Key: { id: seriesId },
     };
 
@@ -55,7 +53,7 @@ module.exports.handler = middy(async (event) => {
 
       await dynamodb
         .put({
-          TableName: SERIES_CONTENTS_TABLE,
+          TableName: tableNames.seriesContentsTable,
           Item: episode,
         })
         .promise();
@@ -74,7 +72,7 @@ module.exports.handler = middy(async (event) => {
 
     await dynamodb
       .update({
-        TableName: SERIES_TABLE,
+        TableName: tableNames.seriesTable,
         Key: { id: seriesId },
         UpdateExpression: "SET stats = :stats, updatedAt = :updatedAt",
         ExpressionAttributeValues: {
