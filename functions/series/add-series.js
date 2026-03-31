@@ -13,22 +13,24 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 });
 
 module.exports.handler = middy(async (event) => {
-  const { title, topicType, source, backgroundImage } = JSON.parse(event.body);
+  const { title, topicType, sourceId, backgroundImageAssetId } = JSON.parse(
+    event.body,
+  );
   const email = event.requestContext.authorizer.claims.email;
 
   const user = await getUserByEmail(email);
 
-  if (!source) {
+  if (!user) {
     return {
       statusCode: 404,
       body: JSON.stringify({
-        message: "Source not found",
+        message: "User does not exist",
       }),
     };
   }
 
   try {
-    const source = await getSourceById(source.id);
+    const source = await getSourceById(sourceId);
 
     if (!source) {
       return {
@@ -48,7 +50,8 @@ module.exports.handler = middy(async (event) => {
       topicType,
       sourceId: source?.id,
       source,
-      backgroundImage,
+      backgroundImageAssetId,
+      backgroundImage: null,
       stats: {
         averageRating: 0,
         totalPlays: 0,

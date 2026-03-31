@@ -2,6 +2,9 @@ const AWS = require("aws-sdk");
 const middy = require("@middy/core");
 const cors = require("@middy/http-cors");
 const { removeNull } = require("../../libs/utils");
+const { getUserByEmail } = require("../../modules/users/get-user-by-email");
+const { getSourceById } = require("../../modules/sources/get-source-by-id");
+const { tableNames } = require("../../constants/table-names");
 
 const dynamodb = new AWS.DynamoDB.DocumentClient({
   apiVersion: "2012-08-10",
@@ -9,22 +12,26 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 });
 
 module.exports.handler = middy(async (event) => {
-  const { id, title, topicType, source, backgroundImage, stats } = JSON.parse(
-    event.body,
-  );
-  const userId = event.requestContext.authorizer.claims.email;
+  const { id, title, topicType, sourceId, backgroundImageAssetId, stats } =
+    JSON.parse(event.body);
+  const email = event.requestContext.authorizer.claims.email;
+
+  const user = await getUserByEmail(email);
+
+  if (!user) {
+    return {
+      statusCode: 404,
+      body: JSON.stringify({
+        message: "User does not exist",
+      }),
+    };
+  }
 
   try {
-    const { SERIES_TABLE, SOURCE_TABLE } = process.env;
+    if (sourceId) {
+      const source = await getSourceById(sourceId);
 
-    if (source?.id) {
-      const sourceParams = {
-        TableName: SOURCE_TABLE,
-        Key: { id: source.id },
-      };
-      const sourceResult = await dynamodb.get(sourceParams).promise();
-
-      if (!sourceResult.Item) {
+      if (!source) {
         return {
           statusCode: 404,
           body: JSON.stringify({
@@ -35,7 +42,7 @@ module.exports.handler = middy(async (event) => {
     }
 
     const updateParams = {
-      TableName: SERIES_TABLE,
+      TableName: tableNames.seriesTable,
       Key: { id },
       UpdateExpression: "SET updatedAt = :updatedAt",
       ExpressionAttributeValues: {
@@ -57,17 +64,19 @@ module.exports.handler = middy(async (event) => {
       updateParams.ExpressionAttributeValues[":topicType"] = topicType;
     }
 
-    if (source) {
+    if (sourceId) {
+      const source = await getSourceById(sourceId);
       updateParams.UpdateExpression +=
         ", source = :source, sourceId = :sourceId";
       updateParams.ExpressionAttributeValues[":source"] = source;
-      updateParams.ExpressionAttributeValues[":sourceId"] = source?.id;
+      updateParams.ExpressionAttributeValues[":sourceId"] = sourceId;
     }
 
-    if (backgroundImage) {
-      updateParams.UpdateExpression += ", backgroundImage = :backgroundImage";
-      updateParams.ExpressionAttributeValues[":backgroundImage"] =
-        backgroundImage;
+    if (backgroundImageAssetId) {
+      updateParams.UpdateExpression +=
+        ", backgroundImageAssetId = :backgroundImageAssetId";
+      updateParams.ExpressionAttributeValues[":backgroundImageAssetId"] =
+        backgroundImageAssetId;
     }
 
     if (stats) {
@@ -77,7 +86,7 @@ module.exports.handler = middy(async (event) => {
 
     const result = await dynamodb.update(updateParams).promise();
 
-    if (!result.Attributes || result.Attributes.userId !== userId) {
+    if (!result.Attributes || result.Attributes.userId !== user.id) {
       return {
         statusCode: 404,
         body: JSON.stringify({

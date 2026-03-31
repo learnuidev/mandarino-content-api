@@ -54,6 +54,7 @@ provider:
     SERVICE_NAME: ${self:service}
     STAGE: ${self:provider.stage}
     LOG_LEVEL: ${self:custom.logLevel.${self:provider.stage}, self:custom.logLevel.default}
+    USER_ASSETS_TABLE: ${self:custom.UserAssetsTable.Name}
 
 functions:
   add-series:
@@ -72,6 +73,7 @@ functions:
       SERIES_CONTENTS_TABLE: !Ref SeriesContentsTable
       LEGACY_CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
       SOURCE_TABLE: !Ref SourceTable
+      USER_ASSETS_TABLE: ${self:custom.UserAssetsTable.Name}
 
   update-series:
     handler: functions/series/update-series.handler
