@@ -171,6 +171,11 @@ functions:
             - "/"
             - - ${self:custom.UsersTable.Arn}
               - "index/byEmail"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - ${self:custom.UserAssetsTable.Arn}
 
   get-series-details:
     handler: functions/series/get-series-details.handler

@@ -9,7 +9,7 @@ const { getUserByEmail } = require("../../modules/users/get-user-by-email");
 const { ulid } = require("ulid");
 const {
   getUserAssetById,
-} = require("../../modules/user-assets/get-user-assets-by-id");
+} = require("../../modules/user-assets/get-user-asset-by-id");
 
 const dynamodb = new AWS.DynamoDB.DocumentClient({
   apiVersion: "2012-08-10",

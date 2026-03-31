@@ -2,6 +2,9 @@ const AWS = require("aws-sdk");
 const middy = require("@middy/core");
 const cors = require("@middy/http-cors");
 const { getUserByEmail } = require("../../modules/users/get-user-by-email");
+const {
+  getUserAssetById,
+} = require("../../modules/user-assets/get-user-asset-by-id");
 
 const dynamodb = new AWS.DynamoDB.DocumentClient({
   apiVersion: "2012-08-10",
@@ -75,12 +78,21 @@ module.exports.handler = middy(async (event) => {
 
     if (exclusiveStartKey) {
       params.ExclusiveStartKey = JSON.parse(
-        Buffer.from(exclusiveStartKey, "base64").toString(),
+        Buffer.from(exclusiveStartKey, "base64").toString()
       );
     }
 
     const result = await dynamodb.query(params).promise();
-    items = result.Items || [];
+    items = Promise.all(
+      (result.Items || [])?.map(async (item) => {
+        const asset = await getUserAssetById(item.backgroundImageAssetId);
+
+        return {
+          ...item,
+          backgroundImage: asset?.sourceUrl,
+        };
+      })
+    );
 
     if (!topicType && !sourceId) {
       items = items.filter((item) => item.userId === userId);
