@@ -83,7 +83,7 @@ module.exports.handler = middy(async (event) => {
     }
 
     const result = await dynamodb.query(params).promise();
-    items = Promise.all(
+    items = await Promise.all(
       (result.Items || [])?.map(async (item) => {
         const asset = await getUserAssetById(item.backgroundImageAssetId);
 
