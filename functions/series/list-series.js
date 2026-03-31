@@ -1,6 +1,7 @@
 const AWS = require("aws-sdk");
 const middy = require("@middy/core");
 const cors = require("@middy/http-cors");
+const { getUserByEmail } = require("../../modules/users/get-user-by-email");
 
 const dynamodb = new AWS.DynamoDB.DocumentClient({
   apiVersion: "2012-08-10",
@@ -10,26 +11,67 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 module.exports.handler = middy(async (event) => {
   const {
     topicType,
+    sourceId,
     sourceUsername,
     limit = 10,
     direction = "desc",
     exclusiveStartKey,
   } = event.queryStringParameters || {};
-  const userId = event.requestContext.authorizer.claims.email;
+  const email = event.requestContext.authorizer.claims.email;
+
+  const user = await getUserByEmail(email);
+
+  if (!user) {
+    return {
+      statusCode: 404,
+      body: JSON.stringify({
+        message: "User does not exist",
+      }),
+    };
+  }
+
+  const userId = user.id;
 
   try {
     const { SERIES_TABLE } = process.env;
 
-    const params = {
-      TableName: SERIES_TABLE,
-      IndexName: "byUserId",
-      KeyConditionExpression: "userId = :userId",
-      ExpressionAttributeValues: {
-        ":userId": userId,
-      },
-      ScanIndexForward: direction === "asc",
-      Limit: parseInt(limit, 10),
-    };
+    let params;
+    let items = [];
+
+    if (topicType) {
+      params = {
+        TableName: SERIES_TABLE,
+        IndexName: "byTopicType",
+        KeyConditionExpression: "topicType = :topicType",
+        ExpressionAttributeValues: {
+          ":topicType": topicType,
+        },
+        ScanIndexForward: direction === "asc",
+        Limit: parseInt(limit, 10),
+      };
+    } else if (sourceId) {
+      params = {
+        TableName: SERIES_TABLE,
+        IndexName: "bySourceId",
+        KeyConditionExpression: "sourceId = :sourceId",
+        ExpressionAttributeValues: {
+          ":sourceId": sourceId,
+        },
+        ScanIndexForward: direction === "asc",
+        Limit: parseInt(limit, 10),
+      };
+    } else {
+      params = {
+        TableName: SERIES_TABLE,
+        IndexName: "byUserId",
+        KeyConditionExpression: "userId = :userId",
+        ExpressionAttributeValues: {
+          ":userId": userId,
+        },
+        ScanIndexForward: direction === "asc",
+        Limit: parseInt(limit, 10),
+      };
+    }
 
     if (exclusiveStartKey) {
       params.ExclusiveStartKey = JSON.parse(
@@ -38,10 +80,10 @@ module.exports.handler = middy(async (event) => {
     }
 
     const result = await dynamodb.query(params).promise();
-    let items = result.Items || [];
+    items = result.Items || [];
 
-    if (topicType) {
-      items = items.filter((item) => item.topicType === topicType);
+    if (!topicType && !sourceId) {
+      items = items.filter((item) => item.userId === userId);
     }
 
     if (sourceUsername) {

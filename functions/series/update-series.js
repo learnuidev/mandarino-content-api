@@ -15,7 +15,24 @@ module.exports.handler = middy(async (event) => {
   const userId = event.requestContext.authorizer.claims.email;
 
   try {
-    const { SERIES_TABLE } = process.env;
+    const { SERIES_TABLE, SOURCE_TABLE } = process.env;
+
+    if (source?.id) {
+      const sourceParams = {
+        TableName: SOURCE_TABLE,
+        Key: { id: source.id },
+      };
+      const sourceResult = await dynamodb.get(sourceParams).promise();
+
+      if (!sourceResult.Item) {
+        return {
+          statusCode: 404,
+          body: JSON.stringify({
+            message: "Source not found",
+          }),
+        };
+      }
+    }
 
     const updateParams = {
       TableName: SERIES_TABLE,
@@ -41,8 +58,10 @@ module.exports.handler = middy(async (event) => {
     }
 
     if (source) {
-      updateParams.UpdateExpression += ", source = :source";
+      updateParams.UpdateExpression +=
+        ", source = :source, sourceId = :sourceId";
       updateParams.ExpressionAttributeValues[":source"] = source;
+      updateParams.ExpressionAttributeValues[":sourceId"] = source?.id;
     }
 
     if (backgroundImage) {

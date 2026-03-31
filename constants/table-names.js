@@ -8,6 +8,7 @@ const tableNames = {
   contentsTable: process.env.CONTENTS_TABLE,
 
   usersTable: process.env.USERS_TABLE,
+  sourceTable: process.env.SOURCE_TABLE,
 };
 
 module.exports = {

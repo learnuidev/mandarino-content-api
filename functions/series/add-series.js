@@ -2,6 +2,10 @@ const AWS = require("aws-sdk");
 const middy = require("@middy/core");
 const cors = require("@middy/http-cors");
 const { removeNull } = require("../../libs/utils");
+const { getSourceById } = require("../../modules/sources/get-source-by-id");
+const { tableNames } = require("../../constants/table-names");
+const { getUserByEmail } = require("../../modules/users/get-user-by-email");
+const { ulid } = require("ulid");
 
 const dynamodb = new AWS.DynamoDB.DocumentClient({
   apiVersion: "2012-08-10",
@@ -10,17 +14,39 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 
 module.exports.handler = middy(async (event) => {
   const { title, topicType, source, backgroundImage } = JSON.parse(event.body);
-  const userId = event.requestContext.authorizer.claims.email;
+  const email = event.requestContext.authorizer.claims.email;
+
+  const user = await getUserByEmail(email);
+
+  if (!source) {
+    return {
+      statusCode: 404,
+      body: JSON.stringify({
+        message: "Source not found",
+      }),
+    };
+  }
 
   try {
-    const { SERIES_TABLE } = process.env;
-    const id = `series_${Date.now()}`;
+    const source = await getSourceById(source.id);
+
+    if (!source) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({
+          message: "Source not found",
+        }),
+      };
+    }
+
+    const id = ulid();
 
     const series = removeNull({
       id,
-      userId,
+      userId: user.id,
       title,
       topicType,
+      sourceId: source?.id,
       source,
       backgroundImage,
       stats: {
@@ -36,7 +62,7 @@ module.exports.handler = middy(async (event) => {
     });
 
     const params = {
-      TableName: SERIES_TABLE,
+      TableName: tableNames.seriesTable,
       Item: series,
     };
 
