@@ -121,7 +121,7 @@ functions:
             arn: ${self:custom.CognitoUserPool.Arn}
     environment:
       SERIES_TABLE: !Ref SeriesTable
-      SERIES_CONTENTS_TABLE: !Ref SeriesContetsTable
+      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTable
       LEGACY_CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
 
   remove-episodes:
@@ -138,7 +138,7 @@ functions:
     environment:
       SERIES_TABLE: !Ref SeriesTable
       SERIES_CONTENTS_TABLE: !Ref SeriesContentsTable
-      CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
+      LEGACY_CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
 
 resources:
   Resources:

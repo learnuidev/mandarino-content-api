@@ -4,7 +4,10 @@ require("dotenv").config();
 
 const tableNames = {
   seriesTable: process.env.SERIES_TABLE,
-  contentTable: process.env.SERIES_CONTENT_TABLE,
+  seriesContentsTable: process.env.SERIES_CONTENTS_TABLE,
+  contentsTable: process.env.CONTENTS_TABLE,
+
+  usersTable: process.env.USERS_TABLE,
 };
 
 module.exports = {
