@@ -129,7 +129,7 @@ functions:
     handler: functions/series/list-series.handler
     events:
       - http:
-          path: /v1/list-series
+          path: /v1/series
           method: GET
           cors: true
           authorizer:
@@ -151,6 +151,10 @@ functions:
             - "/"
             - - !GetAtt SeriesTable.Arn
               - "index/bySourceId"
+          - !Join
+            - "/"
+            - - !GetAtt SeriesTable.Arn
+              - "index/byUserId"
       - Effect: Allow
         Action:
           - dynamodb:Query
@@ -264,6 +268,14 @@ functions:
           - dynamodb:PutItem
         Resource:
           - !GetAtt SourceTable.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
+            - - ${self:custom.UsersTable.Arn}
+              - "index/byEmail"
 
   update-source:
     handler: functions/sources/update-source.handler

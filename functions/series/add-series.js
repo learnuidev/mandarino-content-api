@@ -5,10 +5,11 @@ const { removeNull } = require("../../libs/utils");
 const { getSourceById } = require("../../modules/sources/get-source-by-id");
 const { tableNames } = require("../../constants/table-names");
 const { getUserByEmail } = require("../../modules/users/get-user-by-email");
+
+const { ulid } = require("ulid");
 const {
   getUserAssetById,
-} = require("../../modules/assets/get-user-asset-by-id");
-const { ulid } = require("ulid");
+} = require("../../modules/user-assets/get-user-assets-by-id");
 
 const dynamodb = new AWS.DynamoDB.DocumentClient({
   apiVersion: "2012-08-10",
@@ -17,7 +18,7 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 
 module.exports.handler = middy(async (event) => {
   const { title, topicType, sourceId, backgroundImageAssetId } = JSON.parse(
-    event.body,
+    event.body
   );
   const email = event.requestContext.authorizer.claims.email;
 
