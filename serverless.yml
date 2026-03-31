@@ -242,6 +242,75 @@ functions:
         Resource:
           - !GetAtt SeriesContentsTable.Arn
 
+  add-source:
+    handler: functions/sources/add-source.handler
+    events:
+      - http:
+          path: /v1/add-source
+          method: POST
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: ${self:custom.CognitoUserPool.Arn}
+    environment:
+      SOURCE_TABLE: !Ref SourceTable
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource:
+          - !GetAtt SourceTable.Arn
+
+  update-source:
+    handler: functions/sources/update-source.handler
+    events:
+      - http:
+          path: /v1/update-source
+          method: POST
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: ${self:custom.CognitoUserPool.Arn}
+    environment:
+      SOURCE_TABLE: !Ref SourceTable
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt SourceTable.Arn
+
+  list-sources:
+    handler: functions/sources/list-sources.handler
+    events:
+      - http:
+          path: /v1/list-sources
+          method: GET
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: ${self:custom.CognitoUserPool.Arn}
+    environment:
+      SOURCE_TABLE: !Ref SourceTable
+      USERS_TABLE: ${self:custom.UsersTable}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !GetAtt SourceTable.Arn
+          - !Join ["/", ["!GetAtt SourceTable.Arn", "index", "*"]]
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - ${self:custom.UsersTable.Arn}
+          - !Join ["/", ["${self:custom.UsersTable.Arn}", "index", "*"]]
+
 resources:
   Resources:
     SourceTable:
