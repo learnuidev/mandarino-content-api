@@ -1,4 +1,4 @@
-service: nomad-method-v2
+service: mandarino-content-api
 frameworkVersion: "3"
 
 plugins:
@@ -24,15 +24,6 @@ custom:
 
   ContentsTable:
     Name: ${cf:nomadmethod-api-${self:provider.stage}.ContentsTableName}
-  CharactersTable:
-    Name: ${cf:nomadmethod-api-${self:provider.stage}.CharactersTableName}
-  ComponentsTable:
-    Name: ${cf:nomadmethod-api-${self:provider.stage}.ComponentsTableName}
-  UserCredentialsTable:
-    Name: ${cf:nomadmethod-api-${self:provider.stage}.UserCredentialsTableName}
-  MandarinoKMSKey:
-    Arn: ${cf:nomadmethod-api-${self:provider.stage}.MandarinoKMSKeyArn}
-
   CognitoUserPool:
     Arn: ${cf:nomadmethod-api-${self:provider.stage}.CognitoUserPoolArn}
     Id: ${cf:nomadmethod-api-${self:provider.stage}.CognitoUserPoolId}
@@ -48,380 +39,12 @@ provider:
   eventBridge:
     useCloudFormation: true
   environment:
-    # kms_arn: !GetAtt ComposeKMSKey.Arn
-    serviceName: ${self:service}
-    stage: ${self:provider.stage}
+    SERVICE_NAME: ${self:service}
     STAGE: ${self:provider.stage}
     LOG_LEVEL: ${self:custom.logLevel.${self:provider.stage}, self:custom.logLevel.default}
     USER_CREDENTIALS_TABLE: ${self:custom.UserCredentialsTable.Name}
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:Scan
-        - dynamodb:PutItem
-        - dynamodb:Query
-        - dynamodb:GetItem
-        - dynamodb:UpdateItem
-        - dynamodb:ListTables
-        - dynamodb:DeleteItem
-        - dynamodb:BatchWriteItem
-      Resource: "*"
-    - Effect: Allow
-      Action:
-        - ApiGateway:*
-      Resource: "*"
-    - Effect: Allow
-      Action:
-        - cloudformation:ValidateTemplate
-        - cloudformation:CreateStack
-        - cloudformation:ListStackResources
-        - cloudformation:DescribeStackResource
-        - cloudformation:DescribeStacks
-      Resource: "*"
-      # Email
-    - Effect: Allow
-      Action: ses:SendEmail
-      Resource: "*"
-    - Effect: Allow
-      Action: ssm:GetParameters
-      Resource: "*"
-
-    - Effect: Allow
-      Action: events:*
-      Resource: "*"
-    - Effect: Allow
-      Action:
-        - s3:*
-      Resource: "*"
-    - Effect: Allow
-      Action:
-        - bedrock:InvokeModel
-      Resource: "*"
 
 functions:
-  translate-text:
-    timeout: 30
-    handler: functions/translations/translate-text/translate-text.handler
-    events:
-      - http:
-          path: /v1/translations/translate-text
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      CLIPBOARD_TRANSLATIONS_TABLE: !Ref ClipboardTranslationsTable
-  detect-language:
-    timeout: 30
-    handler: functions/detect-language/detect-language.handler
-    events:
-      - http:
-          path: /v1/detect-language
-          method: POST
-          cors: true
-  get-info:
-    timeout: 30
-    handler: functions/youtube/get-info.handler
-    events:
-      - http:
-          path: /v1/youtube/get-info
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      CHARACTER_CONTENTS_TABLE: !Ref CharacterContentsTable
-      CHARACTER_CONTENTS_TABLE_V2: !Ref CharacterContentsTableV2
-  list-meanings:
-    timeout: 30
-    handler: functions/dictionary/list-meanings.handler
-    events:
-      - http:
-          path: /v1/dictionary/list-meanings
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      CHARACTER_CONTENTS_TABLE: !Ref CharacterContentsTable
-      CHARACTER_CONTENTS_TABLE_V2: !Ref CharacterContentsTableV2
-  list-dictionary:
-    timeout: 30
-    handler: functions/dictionary/list-dictionary.handler
-    events:
-      - http:
-          path: /v1/dictionary/list-dictionary
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      DICTIONARY_TABLE: !Ref DictionaryTable
-  add-to-dictionary:
-    timeout: 30
-    handler: functions/dictionary/add-to-dictionary.handler
-    events:
-      - http:
-          path: /v1/dictionary/add-to-dictionary
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      DICTIONARY_TABLE: !Ref DictionaryTable
-  update-dictionary:
-    timeout: 30
-    handler: functions/dictionary/update-dictionary.handler
-    events:
-      - http:
-          path: /v1/dictionary/update-dictionary
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      DICTIONARY_TABLE: !Ref DictionaryTable
-  list-contents:
-    timeout: 30
-    handler: functions/dictionary/list-contents.handler
-    events:
-      - http:
-          path: /v1/dictionary/list-contents
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      CONTENT_TABLE: !Ref ContentTableV2
-  add-content:
-    timeout: 30
-    handler: functions/dictionary/add-content.handler
-    events:
-      - http:
-          path: /v1/dictionary/add-content
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      CONTENT_TABLE: !Ref ContentTableV2
-  get-content:
-    timeout: 30
-    handler: functions/dictionary/get-content.handler
-    events:
-      - http:
-          path: /v1/dictionary/get-content
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      CONTENT_TABLE: !Ref ContentTableV2
-  list-sentences:
-    timeout: 30
-    handler: functions/dictionary/list-sentences.handler
-    events:
-      - http:
-          path: /v1/dictionary/list-sentences
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      CONTENT_TABLE: !Ref ContentTableV2
-      SENTENCE_TABLE: !Ref SentencesTable
-  add-sentence:
-    timeout: 30
-    handler: functions/dictionary/add-sentence.handler
-    events:
-      - http:
-          path: /v1/dictionary/add-sentence
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      CONTENT_TABLE: !Ref ContentTableV2
-      SENTENCE_TABLE: !Ref SentencesTable
-
-  add-sentences:
-    timeout: 300
-    handler: functions/dictionary/add-sentences.handler
-    environment:
-      CONTENT_TABLE: !Ref ContentTableV2
-    events:
-      - stream:
-          type: dynamodb
-          arn: !GetAtt ContentTableV2.StreamArn
-  parse-html:
-    timeout: 30
-    handler: functions/parsers/parse-html.handler
-    events:
-      - http:
-          path: /v1/parse-html
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      CHARACTER_CONTENTS_TABLE: !Ref CharacterContentsTable
-      CHARACTER_CONTENTS_TABLE_V2: !Ref CharacterContentsTableV2
-
-  list-character-contents:
-    handler: functions/character-contents/list-character-contents.handler
-    events:
-      - http:
-          path: /v1/list-character-contents
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      CHARACTER_CONTENTS_TABLE: !Ref CharacterContentsTable
-      CHARACTER_CONTENTS_TABLE_V2: !Ref CharacterContentsTableV2
-
-  add-character-content:
-    handler: functions/character-contents/add-character-content.handler
-    events:
-      - http:
-          path: /v1/add-character-content
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      CHARACTER_CONTENTS_TABLE: !Ref CharacterContentsTable
-      CHARACTER_CONTENTS_TABLE_V2: !Ref CharacterContentsTableV2
-
-  list-translations:
-    handler: functions/translations/list-translations/list-translations.handler
-    events:
-      - http:
-          path: /v1/list-translations
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      TRANSLATIONS_TABLE: !Ref TranslationsTable2
-
-  add-translation:
-    timeout: 30
-    handler: functions/translations/add-translation/add-translation.handler
-    events:
-      - http:
-          path: /v1/add-translation
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      TRANSLATIONS_TABLE: !Ref TranslationsTable2
-
-  add-translation-history:
-    handler: functions/translations/add-translation-history/add-translation-history.handler
-    events:
-      - http:
-          path: /v1/add-translation-history
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      TRANSLATIONS_HISTORY_TABLE: !Ref TranslationsHistoryTable
-
-  list-translation-history:
-    handler: functions/translations/list-translation-history/list-translation-history.handler
-    events:
-      - http:
-          path: /v1/list-translation-history
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      TRANSLATIONS_HISTORY_TABLE: !Ref TranslationsHistoryTable
-
-  get-translation-history:
-    handler: functions/translations/get-translation-history/get-translation-history.handler
-    events:
-      - http:
-          path: /v1/get-translation-history
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      TRANSLATIONS_HISTORY_TABLE: !Ref TranslationsHistoryTable
-
-  delete-translation:
-    handler: functions/translations/delete-translation/delete-translation.handler
-    events:
-      - http:
-          path: /v1/delete-translation
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      TRANSLATIONS_TABLE: !Ref TranslationsTable2
-
-  extract-image:
-    timeout: 30
-    handler: functions/character-contents/extract-image.handler
-    events:
-      - http:
-          path: /v1/extract-image
-          method: POST
-          cors: true
-          authorizer:
-            name: CognitoAuthorizer
-            type: COGNITO_USER_POOLS
-            arn: ${self:custom.CognitoUserPool.Arn}
-    environment:
-      CHARACTER_CONTENTS_TABLE: !Ref CharacterContentsTable
-      CHARACTER_CONTENTS_TABLE_V2: !Ref CharacterContentsTableV2
-
   add-series:
     handler: functions/series/add-series.handler
     events:
@@ -435,8 +58,8 @@ functions:
             arn: ${self:custom.CognitoUserPool.Arn}
     environment:
       SERIES_TABLE: !Ref SeriesTable
-      SERIES_EPISODES_TABLE: !Ref SeriesEpisodesTable
-      CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
+      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTable
+      LEGACY_CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
 
   update-series:
     handler: functions/series/update-series.handler
@@ -451,15 +74,15 @@ functions:
             arn: ${self:custom.CognitoUserPool.Arn}
     environment:
       SERIES_TABLE: !Ref SeriesTable
-      SERIES_EPISODES_TABLE: !Ref SeriesEpisodesTable
-      CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
+      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTable
+      LEGACY_CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
 
   list-series:
     handler: functions/series/list-series.handler
     events:
       - http:
           path: /v1/list-series
-          method: POST
+          method: GET
           cors: true
           authorizer:
             name: CognitoAuthorizer
@@ -467,15 +90,14 @@ functions:
             arn: ${self:custom.CognitoUserPool.Arn}
     environment:
       SERIES_TABLE: !Ref SeriesTable
-      SERIES_EPISODES_TABLE: !Ref SeriesEpisodesTable
-      CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
+      LEGACY_CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
 
   get-series-details:
     handler: functions/series/get-series-details.handler
     events:
       - http:
-          path: /v1/get-series-details
-          method: POST
+          path: /v1/series/{seriesId}
+          method: GET
           cors: true
           authorizer:
             name: CognitoAuthorizer
@@ -483,8 +105,8 @@ functions:
             arn: ${self:custom.CognitoUserPool.Arn}
     environment:
       SERIES_TABLE: !Ref SeriesTable
-      SERIES_EPISODES_TABLE: !Ref SeriesEpisodesTable
-      CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
+      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTable
+      LEGACY_CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
 
   add-episodes:
     handler: functions/series/add-episodes.handler
@@ -499,8 +121,8 @@ functions:
             arn: ${self:custom.CognitoUserPool.Arn}
     environment:
       SERIES_TABLE: !Ref SeriesTable
-      SERIES_EPISODES_TABLE: !Ref SeriesEpisodesTable
-      CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
+      SERIES_CONTENTS_TABLE: !Ref SeriesContetsTable
+      LEGACY_CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
 
   remove-episodes:
     handler: functions/series/remove-episodes.handler
@@ -515,43 +137,11 @@ functions:
             arn: ${self:custom.CognitoUserPool.Arn}
     environment:
       SERIES_TABLE: !Ref SeriesTable
-      SERIES_EPISODES_TABLE: !Ref SeriesEpisodesTable
+      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTable
       CONTENTS_TABLE: ${self:custom.ContentsTable.Name}
 
 resources:
-  Outputs:
-    DictionaryTableName:
-      Value: !Ref DictionaryTable
   Resources:
-    SeriesEpisodesTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        BillingMode: PAY_PER_REQUEST
-        KeySchema:
-          - AttributeName: id
-            KeyType: HASH
-        AttributeDefinitions:
-          - AttributeName: id
-            AttributeType: S
-          - AttributeName: seriesId
-            AttributeType: S
-        GlobalSecondaryIndexes:
-          - IndexName: bySeriesId
-            KeySchema:
-              - AttributeName: seriesId
-                KeyType: HASH
-              - AttributeName: id
-                KeyType: RANGE
-            Projection:
-              ProjectionType: ALL
-        StreamSpecification:
-          StreamViewType: NEW_AND_OLD_IMAGES
-        Tags:
-          # To keep track of user table for diffeent environment
-          - Key: Environment
-            Value: ${self:custom.stage}
-          - Key: Name
-            Value: series-episodes-table
     SeriesTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -580,225 +170,9 @@ resources:
           - Key: Environment
             Value: ${self:custom.stage}
           - Key: Name
-            Value: series-table
-    CharacterContentsTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        BillingMode: PAY_PER_REQUEST
-        KeySchema:
-          - AttributeName: id
-            KeyType: HASH
-        AttributeDefinitions:
-          - AttributeName: id
-            AttributeType: S
-          - AttributeName: userIdAndContent
-            AttributeType: S
-        GlobalSecondaryIndexes:
-          - IndexName: byUserIdAndContent
-            KeySchema:
-              - AttributeName: userIdAndContent
-                KeyType: HASH
-              - AttributeName: id
-                KeyType: RANGE
-            Projection:
-              ProjectionType: ALL
-        StreamSpecification:
-          StreamViewType: NEW_AND_OLD_IMAGES
-        Tags:
-          # To keep track of user table for diffeent environment
-          - Key: Environment
-            Value: ${self:custom.stage}
-          - Key: Name
-            Value: character-content-table
-    CharacterContentsTableV2:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        BillingMode: PAY_PER_REQUEST
-        KeySchema:
-          - AttributeName: id
-            KeyType: HASH
-        AttributeDefinitions:
-          - AttributeName: id
-            AttributeType: S
-          - AttributeName: userIdAndContent
-            AttributeType: S
-          - AttributeName: userId
-            AttributeType: S
-        GlobalSecondaryIndexes:
-          - IndexName: byUserIdAndContent
-            KeySchema:
-              - AttributeName: userIdAndContent
-                KeyType: HASH
-              - AttributeName: id
-                KeyType: RANGE
-            Projection:
-              ProjectionType: ALL
-          - IndexName: byUserId
-            KeySchema:
-              - AttributeName: userId
-                KeyType: HASH
-              - AttributeName: id
-                KeyType: RANGE
-            Projection:
-              ProjectionType: ALL
-        StreamSpecification:
-          StreamViewType: NEW_AND_OLD_IMAGES
-        Tags:
-          # To keep track of user table for diffeent environment
-          - Key: Environment
-            Value: ${self:custom.stage}
-          - Key: Name
-            Value: character-content-table-v2
-    TranslationsTable2:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        BillingMode: PAY_PER_REQUEST
-        KeySchema:
-          - AttributeName: id
-            KeyType: HASH
-        AttributeDefinitions:
-          - AttributeName: id
-            AttributeType: S
-          - AttributeName: userAndContextId
-            AttributeType: S
-        GlobalSecondaryIndexes:
-          - IndexName: byUserAndContextId
-            KeySchema:
-              - AttributeName: userAndContextId
-                KeyType: HASH
-              - AttributeName: id
-                KeyType: RANGE
-            Projection:
-              ProjectionType: ALL
-        StreamSpecification:
-          StreamViewType: NEW_AND_OLD_IMAGES
-        Tags:
-          # To keep track of user table for diffeent environment
-          - Key: Environment
-            Value: ${self:custom.stage}
-          - Key: Name
-            Value: translations-table
-    TranslationsHistoryTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        BillingMode: PAY_PER_REQUEST
-        KeySchema:
-          - AttributeName: id
-            KeyType: HASH
-        AttributeDefinitions:
-          - AttributeName: id
-            AttributeType: S
-          - AttributeName: userId
-            AttributeType: S
-        GlobalSecondaryIndexes:
-          - IndexName: byUserId
-            KeySchema:
-              - AttributeName: userId
-                KeyType: HASH
-              - AttributeName: id
-                KeyType: RANGE
-            Projection:
-              ProjectionType: ALL
-        StreamSpecification:
-          StreamViewType: NEW_AND_OLD_IMAGES
-        Tags:
-          # To keep track of user table for diffeent environment
-          - Key: Environment
-            Value: ${self:custom.stage}
-          - Key: Name
-            Value: translations-table
-    ClipboardTranslationsTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        BillingMode: PAY_PER_REQUEST
-        KeySchema:
-          - AttributeName: id
-            KeyType: HASH
-          - AttributeName: lang
-            KeyType: RANGE
-        AttributeDefinitions:
-          - AttributeName: id
-            AttributeType: S
-          - AttributeName: lang
-            AttributeType: S
-        GlobalSecondaryIndexes:
-          - IndexName: byLang
-            KeySchema:
-              - AttributeName: lang
-                KeyType: HASH
-              - AttributeName: id
-                KeyType: RANGE
-            Projection:
-              ProjectionType: ALL
-        StreamSpecification:
-          StreamViewType: NEW_AND_OLD_IMAGES
-        Tags:
-          # To keep track of user table for diffeent environment
-          - Key: Environment
-            Value: ${self:custom.stage}
-          - Key: Name
-            Value: clipboard-translations-table
-    DictionaryTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        BillingMode: PAY_PER_REQUEST
-        KeySchema:
-          - AttributeName: id
-            KeyType: HASH
-        AttributeDefinitions:
-          - AttributeName: id
-            AttributeType: S
-          - AttributeName: lang
-            AttributeType: S
-        GlobalSecondaryIndexes:
-          - IndexName: byLang
-            KeySchema:
-              - AttributeName: lang
-                KeyType: HASH
-              - AttributeName: id
-                KeyType: RANGE
-            Projection:
-              ProjectionType: ALL
-        StreamSpecification:
-          StreamViewType: NEW_AND_OLD_IMAGES
-        Tags:
-          # To keep track of user table for diffeent environment
-          - Key: Environment
-            Value: ${self:custom.stage}
-          - Key: Name
-            Value: dictionary-table
-    SentencesTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        BillingMode: PAY_PER_REQUEST
-        KeySchema:
-          - AttributeName: id
-            KeyType: HASH
-          - AttributeName: contentId
-            KeyType: RANGE
-        AttributeDefinitions:
-          - AttributeName: id
-            AttributeType: S
-          - AttributeName: contentId
-            AttributeType: S
-        GlobalSecondaryIndexes:
-          - IndexName: byContent
-            KeySchema:
-              - AttributeName: contentId
-                KeyType: HASH
-              - AttributeName: id
-                KeyType: RANGE
-            Projection:
-              ProjectionType: ALL
-        StreamSpecification:
-          StreamViewType: NEW_AND_OLD_IMAGES
-        Tags:
-          # To keep track of user table for diffeent environment
-          - Key: Environment
-            Value: ${self:custom.stage}
-          - Key: Name
-            Value: sentences-table
-    ContentTableV2:
+            Value: mandarino-series-table
+
+    SeriesContentsTable:
       Type: AWS::DynamoDB::Table
       Properties:
         BillingMode: PAY_PER_REQUEST
@@ -826,8 +200,8 @@ resources:
           - Key: Environment
             Value: ${self:custom.stage}
           - Key: Name
-            Value: contents-table-v2
-    JettoTable:
+            Value: series-contents-table
+    ContentDetailsTable:
       Type: AWS::DynamoDB::Table
       Properties:
         BillingMode: PAY_PER_REQUEST
@@ -837,12 +211,12 @@ resources:
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
-          - AttributeName: userId
+          - AttributeName: sk
             AttributeType: S
         GlobalSecondaryIndexes:
-          - IndexName: byUserId
+          - IndexName: bySk
             KeySchema:
-              - AttributeName: userId
+              - AttributeName: sk
                 KeyType: HASH
               - AttributeName: id
                 KeyType: RANGE
@@ -855,33 +229,4 @@ resources:
           - Key: Environment
             Value: ${self:custom.stage}
           - Key: Name
-            Value: jetto-table
-    JettoFileTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        BillingMode: PAY_PER_REQUEST
-        KeySchema:
-          - AttributeName: id
-            KeyType: HASH
-        AttributeDefinitions:
-          - AttributeName: id
-            AttributeType: S
-          - AttributeName: userId
-            AttributeType: S
-        GlobalSecondaryIndexes:
-          - IndexName: byUserId
-            KeySchema:
-              - AttributeName: userId
-                KeyType: HASH
-              - AttributeName: id
-                KeyType: RANGE
-            Projection:
-              ProjectionType: ALL
-        StreamSpecification:
-          StreamViewType: NEW_AND_OLD_IMAGES
-        Tags:
-          # To keep track of user table for diffeent environment
-          - Key: Environment
-            Value: ${self:custom.stage}
-          - Key: Name
-            Value: jetto-files-table
+            Value: content-details-table
