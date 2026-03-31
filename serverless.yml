@@ -157,7 +157,7 @@ functions:
         Resource:
           - !Join
             - "/"
-            - ${self:custom.UsersTable.Arn}
+            - - ${self:custom.UsersTable.Arn}
               - "index/byEmail"
 
   get-series-details:
@@ -299,7 +299,7 @@ functions:
             arn: ${self:custom.CognitoUserPool.Arn}
     environment:
       SOURCE_TABLE: !Ref SourceTable
-      USERS_TABLE: ${self:custom.UsersTable}
+      USER_ASSETS_TABLE: ${self:custom.UserAssetsTable.Name}
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -319,7 +319,7 @@ functions:
         Resource:
           - !Join
             - "/"
-            - ${self:custom.UsersTable.Arn}
+            - - ${self:custom.UsersTable.Arn}
               - "index/byEmail"
 resources:
   Resources:
