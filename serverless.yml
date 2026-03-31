@@ -206,6 +206,14 @@ functions:
             - "/"
             - - !GetAtt SeriesContentsTable.Arn
               - "index/bySk"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
+            - - ${self:custom.UsersTable.Arn}
+              - "index/byEmail"
 
   add-episodes:
     handler: functions/series/add-episodes.handler

@@ -2,6 +2,7 @@ const AWS = require("aws-sdk");
 const middy = require("@middy/core");
 const cors = require("@middy/http-cors");
 const { tableNames } = require("../../constants/table-names");
+const { getUserByEmail } = require("../../modules/users/get-user-by-email");
 
 const dynamodb = new AWS.DynamoDB.DocumentClient({
   apiVersion: "2012-08-10",
@@ -10,7 +11,20 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 
 module.exports.handler = middy(async (event) => {
   const { seriesId } = event.pathParameters;
-  const userId = event.requestContext.authorizer.claims.email;
+  const email = event.requestContext.authorizer.claims.email;
+
+  const user = await getUserByEmail(email);
+
+  if (!user) {
+    return {
+      statusCode: 404,
+      body: JSON.stringify({
+        message: "User does not exist",
+      }),
+    };
+  }
+
+  const userId = user.id;
 
   try {
     const seriesParams = {
@@ -53,7 +67,7 @@ module.exports.handler = middy(async (event) => {
       statusCode: 200,
       body: JSON.stringify({
         series: seriesResult.Item,
-        episodes: episodesResult,
+        episodes: episodesResult.Items || [],
       }),
     };
   } catch (err) {
