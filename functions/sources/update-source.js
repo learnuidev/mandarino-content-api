@@ -61,8 +61,11 @@ module.exports.handler = middy(async (event) => {
     }
 
     if (status) {
-      updateParams.UpdateExpression += ", status = :status";
+      updateParams.UpdateExpression += ", #status = :status";
       updateParams.ExpressionAttributeValues[":status"] = status;
+      updateParams.ExpressionAttributeNames =
+        updateParams.ExpressionAttributeNames || {};
+      updateParams.ExpressionAttributeNames["#status"] = "status";
     }
 
     const result = await dynamodb.update(updateParams).promise();

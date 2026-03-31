@@ -91,6 +91,14 @@ functions:
           - dynamodb:GetItem
         Resource:
           - ${self:custom.UserAssetsTable.Arn}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
+            - - ${self:custom.UsersTable.Arn}
+              - "index/byEmail"
 
   update-series:
     handler: functions/series/update-series.handler
@@ -297,6 +305,14 @@ functions:
           - dynamodb:GetItem
         Resource:
           - !GetAtt SourceTable.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
+            - - ${self:custom.UsersTable.Arn}
+              - "index/byEmail"
 
   list-sources:
     handler: functions/sources/list-sources.handler
