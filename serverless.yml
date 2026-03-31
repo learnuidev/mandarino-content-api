@@ -77,18 +77,15 @@ functions:
     iamRoleStatements:
       - Effect: Allow
         Action:
+          - dynamodb:GetItem
+        Resource: !GetAtt SourceTable.Arn
+      - Effect: Allow
+        Action:
           - dynamodb:PutItem
           - dynamodb:UpdateItem
           - dynamodb:GetItem
         Resource:
           - !GetAtt SeriesTable.Arn
-      - Effect: Allow
-        Action:
-          - dynamodb:GetItem
-          - dynamodb:Query
-        Resource:
-          - !GetAtt SourceTable.Arn
-          - !Join ["/", ["!GetAtt SourceTable.Arn", "index", "*"]]
       - Effect: Allow
         Action:
           - dynamodb:GetItem
@@ -121,10 +118,7 @@ functions:
       - Effect: Allow
         Action:
           - dynamodb:GetItem
-          - dynamodb:Query
-        Resource:
-          - !GetAtt SourceTable.Arn
-          - !Join ["/", ["!GetAtt SourceTable.Arn", "index", "*"]]
+        Resource: !GetAtt SourceTable.Arn
       - Effect: Allow
         Action:
           - dynamodb:GetItem
@@ -148,16 +142,23 @@ functions:
       - Effect: Allow
         Action:
           - dynamodb:Query
-          - dynamodb:GetItem
         Resource:
-          - !GetAtt SeriesTable.Arn
-          - !Join ["/", ["!GetAtt SeriesTable.Arn", "index", "*"]]
+          - !Join
+            - "/"
+            - - !GetAtt SeriesTable.Arn
+              - "index/byTopicType"
+          - !Join
+            - "/"
+            - - !GetAtt SeriesTable.Arn
+              - "index/bySourceId"
       - Effect: Allow
         Action:
           - dynamodb:Query
         Resource:
-          - ${self:custom.UsersTable.Arn}
-          - !Join ["/", ["${self:custom.UsersTable.Arn}", "index", "*"]]
+          - !Join
+            - "/"
+            - ${self:custom.UsersTable.Arn}
+              - "index/byEmail"
 
   get-series-details:
     handler: functions/series/get-series-details.handler
@@ -184,8 +185,10 @@ functions:
         Action:
           - dynamodb:Query
         Resource:
-          - !GetAtt SeriesContentsTable.Arn
-          - !Join ["/", ["!GetAtt SeriesContentsTable.Arn", "index", "*"]]
+          - !Join
+            - "/"
+            - - !GetAtt SeriesContentsTable.Arn
+              - "index/bySk"
 
   add-episodes:
     handler: functions/series/add-episodes.handler
@@ -302,15 +305,22 @@ functions:
         Action:
           - dynamodb:Query
         Resource:
-          - !GetAtt SourceTable.Arn
-          - !Join ["/", ["!GetAtt SourceTable.Arn", "index", "*"]]
+          - !Join
+            - "/"
+            - - !GetAtt SourceTable.Arn
+              - "index/byUserId"
+          - !Join
+            - "/"
+            - - !GetAtt SourceTable.Arn
+              - "index/bySK"
       - Effect: Allow
         Action:
-          - dynamodb:GetItem
+          - dynamodb:Query
         Resource:
-          - ${self:custom.UsersTable.Arn}
-          - !Join ["/", ["${self:custom.UsersTable.Arn}", "index", "*"]]
-
+          - !Join
+            - "/"
+            - ${self:custom.UsersTable.Arn}
+              - "index/byEmail"
 resources:
   Resources:
     SourceTable:
