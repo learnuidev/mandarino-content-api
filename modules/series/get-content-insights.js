@@ -187,8 +187,6 @@ function listNonHskWords({ content }) {
     )
     .flat();
 
-  console.log("WORDS", totalContentWordsRaw);
-
   const nonHskWords = [
     ...new Set(totalContentWordsRaw?.map((word) => word.input)),
   ]
