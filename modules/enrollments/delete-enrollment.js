@@ -8,14 +8,16 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 });
 
 const deleteEnrollment = async (enrollmentId) => {
+  if (!enrollmentId || enrollmentId === "") {
+    throw new Error("Invalid enrollment ID");
+  }
+
   const params = {
     TableName: tableNames.enrollmentsTable,
     Key: { id: enrollmentId },
-    ReturnValues: "ALL_OLD",
   };
 
-  const result = await dynamodb.delete(params).promise();
-  return result.Attributes;
+  await dynamodb.delete(params).promise();
 };
 
 module.exports = {

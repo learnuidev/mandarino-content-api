@@ -559,7 +559,7 @@ functions:
     handler: functions/enrollments/get-enrollment.handler
     events:
       - http:
-          path: /v1/enrollments/{enrollmentId}
+          path: /v1/enrollments/series/{seriesId}
           method: GET
           cors: true
           authorizer:
@@ -569,13 +569,22 @@ functions:
     environment:
       ENROLLMENTS_TABLE: !Ref EnrollmentsTable
       SERIES_TABLE: !Ref SeriesTable
+      USER_ASSETS_TABLE: ${self:custom.UserAssetsTable.Name}
     iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
+            - - !GetAtt EnrollmentsTable.Arn
+              - "index/byUserIdSeriesId"
       - Effect: Allow
         Action:
           - dynamodb:GetItem
         Resource:
-          - !GetAtt EnrollmentsTable.Arn
           - !GetAtt SeriesTable.Arn
+          - ${self:custom.UserAssetsTable.Arn}
       - Effect: Allow
         Action:
           - dynamodb:Query
@@ -584,11 +593,6 @@ functions:
             - "/"
             - - ${self:custom.UsersTable.Arn}
               - "index/byEmail"
-      - Effect: Allow
-        Action:
-          - dynamodb:GetItem
-        Resource:
-          - ${self:custom.UserAssetsTable.Arn}
 
   create-enrollment:
     handler: functions/enrollments/create-enrollment.handler
@@ -646,7 +650,7 @@ functions:
           - !Join
             - "/"
             - - !GetAtt EnrollmentsTable.Arn
-              - "index/byUserId"
+              - "index/byUserIdSeriesId"
           - !GetAtt EnrollmentsTable.Arn
       - Effect: Allow
         Action:

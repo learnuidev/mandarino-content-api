@@ -2,8 +2,8 @@ const middy = require("@middy/core");
 const cors = require("@middy/http-cors");
 const { getUserByEmail } = require("../../modules/users/get-user-by-email");
 const {
-  listEnrollmentsByUserId,
-} = require("../../modules/enrollments/list-enrollments-by-user-id");
+  getEnrollmentByUserAndSeries,
+} = require("../../modules/enrollments/get-enrollment-by-user-and-series");
 const {
   deleteEnrollment: deleteEnrollmentById,
 } = require("../../modules/enrollments/delete-enrollment");
@@ -26,11 +26,7 @@ module.exports.handler = middy(async (event) => {
   const userId = user.id;
 
   try {
-    const result = await listEnrollmentsByUserId(userId, 100);
-
-    const enrollment = result.items.find(
-      (item) => item.seriesId === seriesId && item.status === "active",
-    );
+    const enrollment = await getEnrollmentByUserAndSeries(userId, seriesId);
 
     if (!enrollment) {
       return {
@@ -41,12 +37,12 @@ module.exports.handler = middy(async (event) => {
       };
     }
 
-    const deletedEnrollment = await deleteEnrollmentById(enrollment.id);
+    await deleteEnrollmentById(enrollment.id);
 
     return {
       statusCode: 200,
       body: JSON.stringify({
-        enrollment: deletedEnrollment,
+        message: "Enrollment deleted successfully",
       }),
     };
   } catch (err) {

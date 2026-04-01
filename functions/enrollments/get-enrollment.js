@@ -2,15 +2,15 @@ const middy = require("@middy/core");
 const cors = require("@middy/http-cors");
 const { getUserByEmail } = require("../../modules/users/get-user-by-email");
 const {
-  getEnrollmentById,
-} = require("../../modules/enrollments/get-enrollment-by-id");
+  getEnrollmentByUserAndSeries,
+} = require("../../modules/enrollments/get-enrollment-by-user-and-series");
 const { getSeriesById } = require("../../modules/series/get-series-by-id");
 const {
   getUserAssetById,
 } = require("../../modules/user-assets/get-user-asset-by-id");
 
 module.exports.handler = middy(async (event) => {
-  const { enrollmentId } = event.pathParameters;
+  const { seriesId } = event.pathParameters;
   const email = event.requestContext.authorizer.claims.email;
 
   const user = await getUserByEmail(email);
@@ -27,22 +27,13 @@ module.exports.handler = middy(async (event) => {
   const userId = user.id;
 
   try {
-    const enrollment = await getEnrollmentById(enrollmentId);
+    const enrollment = await getEnrollmentByUserAndSeries(userId, seriesId);
 
     if (!enrollment) {
       return {
         statusCode: 404,
         body: JSON.stringify({
           message: "Enrollment not found",
-        }),
-      };
-    }
-
-    if (enrollment.userId !== userId) {
-      return {
-        statusCode: 403,
-        body: JSON.stringify({
-          message: "Access denied",
         }),
       };
     }
