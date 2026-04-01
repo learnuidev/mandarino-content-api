@@ -1,6 +1,6 @@
-const totalHskWords = require("../../data/hsk-words").totalHskWords;
+const totalHskWords = require("../../data/hsk").hskWords2;
 
-const hskWordsMap = require("../../data/hsk-words-map").hskWordsMap;
+const hskWordsMap = require("../../data/hsk-words").hskWordsMap;
 
 // === UTILITIES ===
 function filterHanCharacters(char) {
@@ -142,8 +142,6 @@ function calculateRates(newChars, masteryChars, totalChars) {
 }
 
 function listNonHskWords({ content }) {
-  // console.log("CONNTENT", content.transcriptions[0]);
-
   const containsWords = content.transcriptions?.[0]?.words?.length > 0;
 
   if (containsWords) {
@@ -151,13 +149,17 @@ function listNonHskWords({ content }) {
       .map((transcription) => transcription.words)
       .flat();
 
-    const totalContentWords = totalContentWordsRaw
-      .filter((item) => filterHanCharacters(item.input))
+    const nonHskWords = [
+      ...new Set(totalContentWordsRaw?.map((word) => word.input)),
+    ]
+      .filter((item) => filterHanCharacters(item))
       .filter((item) => {
-        return !hskWordsMap[item.input];
+        return !hskWordsMap[item];
       });
 
-    return totalContentWords;
+    console.log("TOTAL CONTENT WORDS", JSON.stringify(nonHskWords));
+
+    return nonHskWords;
   }
   return [];
 }
@@ -219,14 +221,21 @@ function getContentInsights({
   const nonHskWords = listNonHskWords({ content, hskWords });
 
   return {
-    totalNewCharacters,
-    filteredHskWords: hskWordsWithMetrics,
+    filteredHskWords: hskWordsWithMetrics?.map((item) => {
+      return {
+        hanzi: item.hanzi,
+        hskLevel: item.hskLevel,
+      };
+    }),
     uniqueCharacters: uniqueCharactersMemo,
+    totalNewCharacters,
     nonHskWords,
 
+    totalUniqueCharacters: uniqueCharactersMemo.length,
     ...rates,
     ...totals,
     ...hskCounts,
+
     totalNonHskWords: nonHskWords.length,
   };
 }
