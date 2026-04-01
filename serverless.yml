@@ -211,7 +211,7 @@ functions:
           - !Join
             - "/"
             - - !GetAtt SeriesContentsTableV2.Arn
-              - "index/bySk"
+              - "index/bySeriesId"
       - Effect: Allow
         Action:
           - dynamodb:Query
@@ -313,11 +313,20 @@ functions:
         Resource:
           - !Join
             - "/"
+            - - !GetAtt SeriesContentsTableV2.Arn
+              - "index/bySeriesId"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
             - - ${self:custom.UsersTable.Arn}
               - "index/byEmail"
       - Effect: Allow
         Action:
           - dynamodb:BatchGetItem
+          - dynamodb:GetItem
         Resource:
           - ${self:custom.LegacyContentsTable.Arn}
       - Effect: Allow
@@ -363,8 +372,17 @@ functions:
       - Effect: Allow
         Action:
           - dynamodb:Query
+          - dynamodb:GetItem
         Resource:
           - !GetAtt SeriesContentsTableV2.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
+            - - !GetAtt SeriesContentsTableV2.Arn
+              - "index/bySeriesId"
       - Effect: Allow
         Action:
           - dynamodb:Query

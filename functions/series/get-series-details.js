@@ -51,13 +51,14 @@ module.exports.handler = middy(async (event) => {
         }),
       };
     }
+    //
 
     const episodesParams = {
       TableName: tableNames.seriesContentsTable,
-      IndexName: "bySk",
-      KeyConditionExpression: "sk = :sk",
+      IndexName: "bySeriesId",
+      KeyConditionExpression: "seriesId = :seriesId",
       ExpressionAttributeValues: {
-        ":sk": `series#${seriesId}`,
+        ":seriesId": seriesId,
       },
     };
 
