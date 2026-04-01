@@ -220,6 +220,11 @@ functions:
             - "/"
             - - ${self:custom.UsersTable.Arn}
               - "index/byEmail"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - ${self:custom.UserAssetsTable.Arn}
 
   add-episodes:
     handler: functions/series/add-episodes.handler

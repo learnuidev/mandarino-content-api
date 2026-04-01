@@ -3,6 +3,10 @@ const middy = require("@middy/core");
 const cors = require("@middy/http-cors");
 const { tableNames } = require("../../constants/table-names");
 const { getUserByEmail } = require("../../modules/users/get-user-by-email");
+const {
+  getUserAssetById,
+} = require("../../modules/user-assets/get-user-asset-by-id");
+const { getSeriesById } = require("../../modules/series/get-series-by-id");
 
 const dynamodb = new AWS.DynamoDB.DocumentClient({
   apiVersion: "2012-08-10",
@@ -24,17 +28,12 @@ module.exports.handler = middy(async (event) => {
     };
   }
 
-  const userId = user.id;
+  // const userId = user.id;
 
   try {
-    const seriesParams = {
-      TableName: tableNames.seriesTable,
-      Key: { id: seriesId },
-    };
+    const series = await getSeriesById(seriesId);
 
-    const seriesResult = await dynamodb.get(seriesParams).promise();
-
-    if (!seriesResult.Item) {
+    if (!series) {
       return {
         statusCode: 404,
         body: JSON.stringify({
@@ -43,15 +42,17 @@ module.exports.handler = middy(async (event) => {
       };
     }
 
-    if (seriesResult.Item.userId !== userId) {
-      return {
-        statusCode: 403,
-        body: JSON.stringify({
-          message: "Access denied",
-        }),
-      };
-    }
-    //
+    const asset = await getUserAssetById(series.backgroundImageAssetId);
+
+    // if (seriesResult.Item.userId !== userId) {
+    //   return {
+    //     statusCode: 403,
+    //     body: JSON.stringify({
+    //       message: "Access denied",
+    //     }),
+    //   };
+    // }
+    // //
 
     const episodesParams = {
       TableName: tableNames.seriesContentsTable,
@@ -67,7 +68,7 @@ module.exports.handler = middy(async (event) => {
     return {
       statusCode: 200,
       body: JSON.stringify({
-        series: seriesResult.Item,
+        series: { ...series, backgroundImage: asset.sourceUrl },
         episodes: episodesResult.Items || [],
       }),
     };
