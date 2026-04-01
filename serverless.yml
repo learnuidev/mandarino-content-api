@@ -627,7 +627,7 @@ functions:
     handler: functions/enrollments/delete-enrollment.handler
     events:
       - http:
-          path: /v1/enrollments/{seriesId}
+          path: /v1/enrollments/series/{seriesId}
           method: DELETE
           cors: true
           authorizer:
