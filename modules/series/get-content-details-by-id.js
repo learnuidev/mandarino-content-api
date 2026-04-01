@@ -1,7 +1,7 @@
 const { tableNames } = require("../../constants/table-names");
 
 const AWS = require("aws-sdk");
-const { getLegacyContentById } = require("./get-content-by-id");
+const { getLegacyContentById } = require("../legacy-content/get-content-by-id");
 const { getUserAssetById } = require("../user-assets/get-user-asset-by-id");
 const { getPresignedUrl } = require("../../libs/s3/get-presigned-url");
 
@@ -19,11 +19,14 @@ const item = {
   updatedAt: 1775004887140,
 };
 
-const getLegacyContentDetailById = async (id) => {
+const getContentDetailById = async ({
+  id,
+  tableName = tableNames.legacyContentDetailsTable,
+}) => {
   const content = await getLegacyContentById(id);
 
   const seriesParams = {
-    TableName: tableNames.legacyContentDetailsTable,
+    TableName: tableName,
     Key: { id },
   };
 
@@ -71,5 +74,5 @@ const getLegacyContentDetailById = async (id) => {
 };
 
 module.exports = {
-  getLegacyContentDetailById,
+  getContentDetailById,
 };

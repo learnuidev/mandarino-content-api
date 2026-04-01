@@ -1,6 +1,5 @@
-const {
-  getLegacyContentDetailById,
-} = require("../legacy-content/get-legacy-content-details-by-id");
+const { removeNull } = require("../../libs/utils");
+const { getContentDetailById } = require("./get-content-details-by-id");
 const {
   listLegacyContentsByIds,
 } = require("../legacy-content/list-legacy-contents-by-ids");
@@ -33,7 +32,7 @@ const portEpisodes = async ({ seriesId, contentIds }) => {
     // console.log("content", content);
 
     // Fetch Content details
-    const contentDetails = await getLegacyContentDetailById(content.id);
+    const contentDetails = await getContentDetailById({ id: content.id });
 
     // export interface ContentV2 extends CreatedAndUpdatedAt {
     //     id: string;
@@ -103,8 +102,6 @@ const portEpisodes = async ({ seriesId, contentIds }) => {
       totalNonHskWords,
     };
 
-    console.log("stats", stats);
-
     const newParams = {
       id: content.id,
       lang: content.lang,
@@ -113,6 +110,7 @@ const portEpisodes = async ({ seriesId, contentIds }) => {
       title: content.title,
       mediaTranscriptionsId: contentDetails.mediaTranscriptionsId,
       mediaId: content.audioId,
+      youtubeUrl: content.audio,
       seriesId: series.id,
       createdAt: contentDetails.createdAt,
       updatedAt: contentDetails.updatedAt,
@@ -120,13 +118,15 @@ const portEpisodes = async ({ seriesId, contentIds }) => {
       stats,
     };
 
-    await addSeriesContent(newParams);
+    if (content.type === "youtube") {
+      newParams.youtubeUrl = content.audio;
+    }
 
-    console.log("new params", newParams);
-
-    // console.log("NEW PARAMS", newParams);
-
-    // console.log("content details", contentDetails);
+    try {
+      await addSeriesContent(newParams);
+    } catch (err) {
+      console.log("Cannot add existing content");
+    }
   }
 
   const t1 = performance.now();

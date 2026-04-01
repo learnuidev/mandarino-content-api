@@ -106,13 +106,13 @@ function addHskWordMetrics(hskWords, content, sortType) {
 // === AGGREGATORS ===
 function countHskLevels(hskWords) {
   const counts = {
-    // hsk1Words: [],
-    // hsk2Words: [],
-    // hsk3Words: [],
-    // hsk4Words: [],
-    // hsk5Words: [],
-    // hsk6Words: [],
-    // hsk9Words: [],
+    hsk1Words: [],
+    hsk2Words: [],
+    hsk3Words: [],
+    hsk4Words: [],
+    hsk5Words: [],
+    hsk6Words: [],
+    hsk9Words: [],
     totalHsk1Words: 0,
     totalHsk2Words: 0,
     totalHsk3Words: 0,
@@ -126,25 +126,25 @@ function countHskLevels(hskWords) {
     const level = word.hskLevel;
     if (level === 1) {
       counts.totalHsk1Words++;
-      // counts.hsk1Words.push(word);
+      counts.hsk1Words.push(word.hanzi);
     } else if (level === 2) {
       counts.totalHsk2Words++;
-      // counts.hsk2Words.push(word);
+      counts.hsk2Words.push(word.hanzi);
     } else if (level === 3) {
       counts.totalHsk3Words++;
-      // counts.hsk3Words.push(word);
+      counts.hsk3Words.push(word.hanzi);
     } else if (level === 4) {
       counts.totalHsk4Words++;
-      // counts.hsk4Words.push(word);
+      counts.hsk4Words.push(word.hanzi);
     } else if (level === 5) {
       counts.totalHsk5Words++;
-      // counts.hsk5Words.push(word);
+      counts.hsk5Words.push(word.hanzi);
     } else if (level === 6) {
       counts.totalHsk6Words++;
-      // counts.hsk6Words.push(word);
+      counts.hsk6Words.push(word.hanzi);
     } else if (level === 9 || level === "9") {
       counts.totalHsk9Words++;
-      // counts.hsk9Words.push(word);
+      counts.hsk9Words.push(word.hanzi);
     }
   });
 
