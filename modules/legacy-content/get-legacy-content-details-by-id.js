@@ -1,6 +1,9 @@
 const { tableNames } = require("../../constants/table-names");
 
 const AWS = require("aws-sdk");
+const { getLegacyContentById } = require("./get-content-by-id");
+const { getUserAssetById } = require("../user-assets/get-user-asset-by-id");
+const { getPresignedUrl } = require("../../libs/s3/get-presigned-url");
 
 const dynamodb = new AWS.DynamoDB.DocumentClient({
   apiVersion: "2012-08-10",
@@ -16,15 +19,57 @@ const item = {
   updatedAt: 1775004887140,
 };
 
-const getLegacyContentDetailById = async (seriesId) => {
+const getLegacyContentDetailById = async (id) => {
+  const content = await getLegacyContentById(id);
+
   const seriesParams = {
     TableName: tableNames.legacyContentDetailsTable,
-    Key: { id: seriesId },
+    Key: { id },
   };
 
   const resp = await dynamodb.get(seriesParams).promise();
 
-  return resp.Item;
+  const contentDetail = resp.Item;
+
+  let audio;
+  let transcriptions;
+
+  if (contentDetail?.generatedAudioId || content?.audioId || content?.videoId) {
+    const userAssetId =
+      contentDetail?.generatedAudioId || content?.audioId || content?.videoId;
+    const userAsset = await getUserAssetById(userAssetId);
+
+    const presignedUrlResp = await getPresignedUrl({
+      bucketKey: userAsset.uploadBucketKey,
+    });
+
+    console.log("PRESIGNED URL", presignedUrlResp);
+
+    audio = presignedUrlResp.preSignedUrl;
+  } else {
+    audio = content.audio;
+  }
+
+  if (contentDetail?.mediaTranscriptionsId) {
+    const userAsset = await getUserAssetById(
+      contentDetail?.mediaTranscriptionsId
+    );
+
+    const presignedUrlResp = await getPresignedUrl({
+      bucketKey: userAsset.uploadBucketKey,
+    });
+
+    const contentFromS3 = await fetch(presignedUrlResp.preSignedUrl);
+
+    const contentFromS3Json = await contentFromS3.json();
+
+    transcriptions = contentFromS3Json.transcriptions;
+  }
+
+  contentDetail.audioUrl = audio;
+  contentDetail.transcriptions = transcriptions;
+
+  return contentDetail;
 };
 
 module.exports = {

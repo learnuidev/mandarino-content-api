@@ -4,78 +4,93 @@ const {
 const {
   listLegacyContentsByIds,
 } = require("../legacy-content/list-legacy-contents-by-ids");
+const { getContentInsights } = require("./get-content-insights");
 const { getSeriesById } = require("./get-series-by-id");
 
-const portEpisodes = async ({ seriesId, contentIds }, { email, userId }) => {
-  // list legacy contents
+const portEpisodes = async ({ seriesId, contentIds }) => {
+  // 1. Get Series by Id
   const series = await getSeriesById(seriesId);
-  console.log("series", series);
+  // console.log("series", series);
+
+  // 2. Get Legacy Contents
   const contents = await listLegacyContentsByIds({
     contentIds: contentIds,
   });
 
+  // 3. IF legacy contents is not found, throw error
   if (contents.length === 0) {
     throw new Error("Contents not found");
   }
 
-  //   data prep
-  for (const content of contents) {
-    console.log("content", content);
+  const totalCharacters = [];
+  const totalWords = [];
+  const totalSentences = [];
 
+  // 4. Loop over contents and prepare data
+  for (const content of contents) {
+    // console.log("content", content);
+
+    // Fetch Content details
     const contentDetails = await getLegacyContentDetailById(content.id);
 
-    if (content.type === "audio") {
-      // export interface ContentV2 extends CreatedAndUpdatedAt {
-      //     id: string;
-      //     lang: string;
+    // export interface ContentV2 extends CreatedAndUpdatedAt {
+    //     id: string;
+    //     lang: string;
 
-      //     format: ContentFormat;
-      //     status: ContentStatus;
-      //     title: string;
-      //     mediaUrl: string;
-      //     thumbnailUrl: string;
-      //     stats: ContentStats;
+    //     format: ContentFormat;
+    //     status: ContentStatus;
+    //     title: string;
+    //     mediaUrl: string;
+    //     thumbnailUrl: string;
+    //     stats: ContentStats;
 
-      //     mediaTranscriptionsId: string;
-      //     mediaId: string;
-      //   }
+    //     mediaTranscriptionsId: string;
+    //     mediaId: string;
+    //   }
 
-      const newParams = {
-        id: content.id,
-        lang: content.lang,
-        format: content.type,
-        status: content.status,
-        title: content.title,
-        mediaTranscriptionId: contentDetails.mediaTranscriptionId,
-        mediaId: content.mediaId,
-        seriesId: series.id,
-        createdAt: contentDetails.createdAt,
-        updatedAt: contentDetails.updatedAt,
+    // TODO: Calculate total characters
+    const insights = getContentInsights({ content: contentDetails });
+    console.log("total chars", insights);
 
-        stats: {
-          averageRating: 0,
-          totalPlays: 0,
-          totalStars: 0,
+    // TODO: Calculate total words
 
-          totalCharacters: "todo",
-          totalSentences: "todo",
-          totalWords: "todo",
+    // TODO. Calculate total sentences
 
-          hsk1Words: "",
-          hsk2Words: "",
-          hsk3Words: "",
-          hsk4Words: "",
-          hsk5Words: "",
-          hsk6Words: "",
-          hsk9Words: "",
-          nonHskWords: "",
-        },
-      };
+    const newParams = {
+      id: content.id,
+      lang: content.lang,
+      format: content.type,
+      status: content.status,
+      title: content.title,
+      mediaTranscriptionsId: contentDetails.mediaTranscriptionsId,
+      mediaId: content.audioId,
+      seriesId: series.id,
+      createdAt: contentDetails.createdAt,
+      updatedAt: contentDetails.updatedAt,
 
-      console.log("NEW PARAMS", newParams);
-    }
+      stats: {
+        averageRating: 0,
+        totalPlays: 0,
+        totalStars: 0,
 
-    console.log("content details", contentDetails);
+        totalCharacters: "todo",
+        totalSentences: "todo",
+        totalWords: "todo",
+
+        hsk1Words: "",
+        hsk2Words: "",
+        hsk3Words: "",
+        hsk4Words: "",
+        hsk5Words: "",
+        hsk6Words: "",
+        hsk9Words: "",
+        nonHskWords: "",
+      },
+    };
+
+    // console.log("NEW PARAMS", newParams);
+
+    // console.log("content details", contentDetails);
   }
 };
 
