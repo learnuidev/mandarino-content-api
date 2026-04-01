@@ -7,10 +7,6 @@ function filterHanCharacters(char) {
   return /[\u4e00-\u9fff]/.test(char) ? char : "";
 }
 
-function countWords(text) {
-  return text.split(/\s+/).filter(Boolean).length;
-}
-
 function getUniqueChars(texts) {
   const chars = new Set();
   texts.forEach((text) => [...text].forEach((char) => chars.add(char)));
@@ -174,13 +170,9 @@ function getContentInsights({
   const transcriptions = content?.transcriptions || [];
   const lang = content?.lang || transcriptions[0]?.lang;
 
-  // Totals
-  const allText = transcriptions
-    .map((t) => t?.hanzi || t?.input || "")
-    .join(" ");
   const totals = {
     totalSentences: transcriptions.length,
-    totalWords: countWords(allText),
+
     totalCharacters: getUniqueChars(
       transcriptions.map((t) => t?.hanzi || t?.input || "")
     ),
@@ -235,6 +227,8 @@ function getContentInsights({
     ...rates,
     ...totals,
     ...hskCounts,
+
+    totalWords: hskWordsWithMetrics?.length + nonHskWords?.length,
 
     totalNonHskWords: nonHskWords.length,
   };
