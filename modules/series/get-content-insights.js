@@ -2,6 +2,24 @@ const totalHskWords = require("../../data/hsk").hskWords2;
 
 const hskWordsMap = require("../../data/hsk-words").hskWordsMap;
 
+function segmentText({ text, lang }) {
+  const segmenter = new Intl.Segmenter(lang, { granularity: "word" });
+
+  const segments = segmenter.segment(text);
+  let res = [];
+
+  for (const segment of segments) {
+    res.push({
+      input: segment.segment,
+      startIndex: segment.index,
+      endIndex: segment.index + segment.segment.length,
+      lang,
+    });
+  }
+
+  return res;
+}
+
 // === UTILITIES ===
 function filterHanCharacters(char) {
   return /[\u4e00-\u9fff]/.test(char) ? char : "";
@@ -160,24 +178,26 @@ function calculateRates(newChars, masteryChars, totalChars) {
 }
 
 function listNonHskWords({ content }) {
-  const containsWords = content.transcriptions?.[0]?.words?.length > 0;
+  const totalContentWordsRaw = content.transcriptions
+    .map(
+      (transcription) =>
+        transcription.words ||
+        segmentText({ text: transcription.input, lang: transcription.lang }) ||
+        []
+    )
+    .flat();
 
-  if (containsWords) {
-    const totalContentWordsRaw = content.transcriptions
-      .map((transcription) => transcription.words)
-      .flat();
+  console.log("WORDS", totalContentWordsRaw);
 
-    const nonHskWords = [
-      ...new Set(totalContentWordsRaw?.map((word) => word.input)),
-    ]
-      .filter((item) => filterHanCharacters(item))
-      .filter((item) => {
-        return !hskWordsMap[item];
-      });
+  const nonHskWords = [
+    ...new Set(totalContentWordsRaw?.map((word) => word.input)),
+  ]
+    .filter((item) => filterHanCharacters(item))
+    .filter((item) => {
+      return !hskWordsMap[item];
+    });
 
-    return nonHskWords;
-  }
-  return [];
+  return nonHskWords;
 }
 
 // === MAIN ORCHESTRATOR ===
