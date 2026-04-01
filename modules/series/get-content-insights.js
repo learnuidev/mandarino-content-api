@@ -103,71 +103,6 @@ function getContentInsightsNew({
     return isLearned?.status?.toLowerCase() === "forgotten";
   }).length;
 
-  // HSK word categorization (counts only)
-  const hskCounts = {
-    hsk1Words: 0,
-    hsk2Words: 0,
-    hsk3Words: 0,
-    hsk4Words: 0,
-    hsk5Words: 0,
-    hsk6Words: 0,
-    hsk9Words: 0,
-    nonHskWords: 0,
-  };
-
-  // Get all unique words from content
-  const allUniqueWords = new Set(
-    allText
-      .split(/\s+/)
-      .filter(Boolean)
-      .map((word) => word.trim())
-  );
-
-  allUniqueWords.forEach((word) => {
-    const matchingHskWord = hskWords.find(
-      (hskWord) =>
-        (hskWord?.hanzi || hskWord?.input || "").includes(word) ||
-        word.includes(hskWord?.hanzi || hskWord?.input || "")
-    );
-
-    if (matchingHskWord) {
-      const level = matchingHskWord.level || matchingHskWord.hskLevel;
-      if (level === 1) hskCounts.hsk1Words++;
-      else if (level === 2) hskCounts.hsk2Words++;
-      else if (level === 3) hskCounts.hsk3Words++;
-      else if (level === 4) hskCounts.hsk4Words++;
-      else if (level === 5) hskCounts.hsk5Words++;
-      else if (level === 6) hskCounts.hsk6Words++;
-      else if (level === 9 || level === "9") hskCounts.hsk9Words++;
-      else hskCounts.nonHskWords++;
-    } else {
-      hskCounts.nonHskWords++;
-    }
-  });
-
-  const uniqueCharactersMemo = (() => {
-    const res = uniqueCharacters.map((char) => {
-      const frequency = getFrequency({
-        content: lesson,
-        input: char?.hanzi || char?.input || char,
-      });
-
-      const isLearned = learnedCharacters?.[char];
-
-      return {
-        input: char,
-        ...isLearned,
-        isLearned: !!isLearned,
-        frequency,
-      };
-    });
-
-    if (sortType === "popular") {
-      return res.sort((first, second) => second?.frequency - first?.frequency);
-    }
-    return res;
-  })();
-
   const filteredHskWords = (() => {
     const res = hskWords
       .filter((word) => {
@@ -215,6 +150,54 @@ function getContentInsightsNew({
       return res.sort((first, second) => second?.frequency - first?.frequency);
     }
     return res.sort((first, second) => first?.wordIndex - second?.wordIndex);
+  })();
+
+  // HSK word categorization (counts only)
+  const hskCounts = {
+    hsk1Words: 0,
+    hsk2Words: 0,
+    hsk3Words: 0,
+    hsk4Words: 0,
+    hsk5Words: 0,
+    hsk6Words: 0,
+    hsk9Words: 0,
+    nonHskWords: 0,
+  };
+
+  filteredHskWords.forEach((word) => {
+    const matchingHskWord = word;
+
+    const level = matchingHskWord.hskLevel;
+    if (level === 1) hskCounts.hsk1Words++;
+    else if (level === 2) hskCounts.hsk2Words++;
+    else if (level === 3) hskCounts.hsk3Words++;
+    else if (level === 4) hskCounts.hsk4Words++;
+    else if (level === 5) hskCounts.hsk5Words++;
+    else if (level === 6) hskCounts.hsk6Words++;
+    else if (level === 9 || level === "9") hskCounts.hsk9Words++;
+  });
+
+  const uniqueCharactersMemo = (() => {
+    const res = uniqueCharacters.map((char) => {
+      const frequency = getFrequency({
+        content: lesson,
+        input: char?.hanzi || char?.input || char,
+      });
+
+      const isLearned = learnedCharacters?.[char];
+
+      return {
+        input: char,
+        ...isLearned,
+        isLearned: !!isLearned,
+        frequency,
+      };
+    });
+
+    if (sortType === "popular") {
+      return res.sort((first, second) => second?.frequency - first?.frequency);
+    }
+    return res;
   })();
 
   const numberFormatter = new Intl.NumberFormat("en-GB", {
