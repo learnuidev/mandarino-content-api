@@ -8,6 +8,7 @@ const { getContentInsights } = require("./get-content-insights");
 const { getSeriesById } = require("./get-series-by-id");
 
 const portEpisodes = async ({ seriesId, contentIds }) => {
+  const t0 = performance.now();
   // 1. Get Series by Id
   const series = await getSeriesById(seriesId);
   // console.log("series", series);
@@ -22,9 +23,9 @@ const portEpisodes = async ({ seriesId, contentIds }) => {
     throw new Error("Contents not found");
   }
 
-  const totalCharacters = [];
-  const totalWords = [];
-  const totalSentences = [];
+  let totalSeriesCharacters = [];
+  let totalSeriesWords = [];
+  let totalSeriesSentences = [];
 
   // 4. Loop over contents and prepare data
   for (const content of contents) {
@@ -50,11 +51,66 @@ const portEpisodes = async ({ seriesId, contentIds }) => {
 
     // TODO: Calculate total characters
     const insights = getContentInsights({ content: contentDetails });
-    console.log("total chars", insights);
+
+    const {
+      hskWords,
+      uniqueCharacters,
+      // totalNewCharacters,
+      sentences,
+      nonHskWords,
+      // totalUniqueCharacters,
+      // understandingRate,
+      // masteryRate,
+      totalSentences,
+      totalCharacters,
+      totalHsk1Words,
+      totalHsk2Words,
+      totalHsk3Words,
+      totalHsk4Words,
+      totalHsk5Words,
+      totalHsk6Words,
+      totalHsk9Words,
+
+      totalWords,
+      totalNonHskWords,
+    } = insights;
+
+    totalSeriesCharacters = [
+      ...new Set([...totalSeriesCharacters, ...uniqueCharacters]),
+    ];
+
+    totalSeriesWords = [
+      ...new Set([...totalSeriesWords, ...hskWords, ...nonHskWords]),
+    ];
+    totalSeriesSentences = [
+      ...new Set([...totalSeriesSentences, ...sentences]),
+    ];
 
     // TODO: Calculate total words
 
     // TODO. Calculate total sentences
+
+    const stats = {
+      averageRating: 0,
+      totalPlays: 0,
+      totalStars: 0,
+      // totalNewCharacters,
+
+      totalCharacters,
+      totalSentences,
+      totalWords,
+
+      totalHsk1Words,
+      totalHsk2Words,
+      totalHsk3Words,
+      totalHsk4Words,
+      totalHsk5Words,
+      totalHsk6Words,
+      totalHsk9Words,
+      totalNonHskWords,
+    };
+
+    console.log("stats", stats);
 
     const newParams = {
       id: content.id,
@@ -68,35 +124,31 @@ const portEpisodes = async ({ seriesId, contentIds }) => {
       createdAt: contentDetails.createdAt,
       updatedAt: contentDetails.updatedAt,
 
-      stats: {
-        averageRating: 0,
-        totalPlays: 0,
-        totalStars: 0,
-
-        totalCharacters: "todo",
-        totalSentences: "todo",
-        totalWords: "todo",
-
-        hsk1Words: "",
-        hsk2Words: "",
-        hsk3Words: "",
-        hsk4Words: "",
-        hsk5Words: "",
-        hsk6Words: "",
-        hsk9Words: "",
-        nonHskWords: "",
-      },
+      stats,
     };
 
     // console.log("NEW PARAMS", newParams);
 
     // console.log("content details", contentDetails);
   }
+
+  const t1 = performance.now();
+
+  console.log("SERIES STATA", {
+    totalSeriesCharacters: totalSeriesCharacters.length,
+    totalSeriesWords: totalSeriesWords.length,
+    totalSeriesSentences: totalSeriesSentences.length,
+    latency: t1 - t0,
+  });
 };
 
-portEpisodes({
-  seriesId: "01KN2NC2KGY39MRWTERGTTFXTD",
-  contentIds: ["ec366e39-ec00-5856-9640-f36f52a9b21d"],
-}).then((resp) => {
-  console.log("todo");
-});
+// portEpisodes({
+//   seriesId: "01KN2NC2KGY39MRWTERGTTFXTD",
+//   contentIds: [
+//     "ec366e39-ec00-5856-9640-f36f52a9b21d",
+//     "9bb15585-472f-5e6a-a308-a1fc12df82ca",
+//     "968ee9a1-ca28-5268-8b82-2300b01e8ae3",
+//   ],
+// }).then((resp) => {
+//   console.log("todo");
+// });

@@ -43,8 +43,6 @@ const getLegacyContentDetailById = async (id) => {
       bucketKey: userAsset.uploadBucketKey,
     });
 
-    console.log("PRESIGNED URL", presignedUrlResp);
-
     audio = presignedUrlResp.preSignedUrl;
   } else {
     audio = content.audio;

@@ -88,6 +88,13 @@ function addHskWordMetrics(hskWords, content, sortType) {
 // === AGGREGATORS ===
 function countHskLevels(hskWords) {
   const counts = {
+    // hsk1Words: [],
+    // hsk2Words: [],
+    // hsk3Words: [],
+    // hsk4Words: [],
+    // hsk5Words: [],
+    // hsk6Words: [],
+    // hsk9Words: [],
     totalHsk1Words: 0,
     totalHsk2Words: 0,
     totalHsk3Words: 0,
@@ -99,13 +106,28 @@ function countHskLevels(hskWords) {
 
   hskWords.forEach((word) => {
     const level = word.hskLevel;
-    if (level === 1) counts.totalHsk1Words++;
-    else if (level === 2) counts.totalHsk2Words++;
-    else if (level === 3) counts.totalHsk3Words++;
-    else if (level === 4) counts.totalHsk4Words++;
-    else if (level === 5) counts.totalHsk5Words++;
-    else if (level === 6) counts.totalHsk6Words++;
-    else if (level === 9 || level === "9") counts.totalHsk9Words++;
+    if (level === 1) {
+      counts.totalHsk1Words++;
+      // counts.hsk1Words.push(word);
+    } else if (level === 2) {
+      counts.totalHsk2Words++;
+      // counts.hsk2Words.push(word);
+    } else if (level === 3) {
+      counts.totalHsk3Words++;
+      // counts.hsk3Words.push(word);
+    } else if (level === 4) {
+      counts.totalHsk4Words++;
+      // counts.hsk4Words.push(word);
+    } else if (level === 5) {
+      counts.totalHsk5Words++;
+      // counts.hsk5Words.push(word);
+    } else if (level === 6) {
+      counts.totalHsk6Words++;
+      // counts.hsk6Words.push(word);
+    } else if (level === 9 || level === "9") {
+      counts.totalHsk9Words++;
+      // counts.hsk9Words.push(word);
+    }
   });
 
   return counts;
@@ -152,8 +174,6 @@ function listNonHskWords({ content }) {
       .filter((item) => {
         return !hskWordsMap[item];
       });
-
-    console.log("TOTAL CONTENT WORDS", JSON.stringify(nonHskWords));
 
     return nonHskWords;
   }
@@ -212,26 +232,41 @@ function getContentInsights({
 
   const nonHskWords = listNonHskWords({ content, hskWords });
 
-  return {
-    filteredHskWords: hskWordsWithMetrics?.map((item) => {
-      return {
-        hanzi: item.hanzi,
-        hskLevel: item.hskLevel,
-      };
-    }),
-    uniqueCharacters: uniqueCharactersMemo,
+  const _hskWords = [
+    ...new Set(
+      hskWordsWithMetrics?.map((item) => {
+        return item.hanzi;
+      })
+    ),
+  ];
+
+  const _uniqueCharacters = [
+    ...new Set(uniqueCharactersMemo.map((item) => item.input)),
+  ];
+
+  const sentences = transcriptions.map((item) => item.input);
+
+  const insights = {
+    hskWords: _hskWords,
+    uniqueCharacters: _uniqueCharacters,
     totalNewCharacters,
     nonHskWords,
+    sentences,
 
-    totalUniqueCharacters: uniqueCharactersMemo.length,
+    totalUniqueCharacters: _uniqueCharacters.length,
     ...rates,
     ...totals,
     ...hskCounts,
 
-    totalWords: hskWordsWithMetrics?.length + nonHskWords?.length,
+    totalWords: [...new Set([..._hskWords, ...nonHskWords])].length,
 
     totalNonHskWords: nonHskWords.length,
+    totalCharacters: uniqueCharacters.length,
+
+    totalSentences: sentences.length,
   };
+
+  return insights;
 }
 
 module.exports = {
