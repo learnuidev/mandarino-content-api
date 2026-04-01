@@ -1,4 +1,3 @@
-const { removeNull } = require("../../libs/utils");
 const { getContentDetailById } = require("./get-content-details-by-id");
 const {
   listLegacyContentsByIds,
@@ -26,6 +25,8 @@ const portEpisodes = async ({ seriesId, contentIds }) => {
   // let totalSeriesCharacters = [];
   // let totalSeriesWords = [];
   // let totalSeriesSentences = [];
+
+  let sortOrder = 1;
 
   // 4. Loop over contents and prepare data
   for (const content of contents) {
@@ -104,6 +105,8 @@ const portEpisodes = async ({ seriesId, contentIds }) => {
 
     const newParams = {
       id: content.id,
+      sortOrder,
+      topicType: series.topicType,
       lang: content.lang,
       format: content.type,
       status: content.status,
@@ -121,6 +124,8 @@ const portEpisodes = async ({ seriesId, contentIds }) => {
     if (content.type === "youtube") {
       newParams.youtubeUrl = content.audio;
     }
+
+    sortOrder = sortOrder + 1;
 
     try {
       await addSeriesContent(newParams);
