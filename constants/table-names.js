@@ -10,6 +10,9 @@ const tableNames = {
   usersTable: process.env.USERS_TABLE,
   sourceTable: process.env.SOURCE_TABLE,
   userAssetsTable: process.env.USER_ASSETS_TABLE,
+
+  legacyContentsTable: process.env.LEGACY_CONTENTS_TABLE,
+  legacyContentDetailsTable: process.env.LEGACY_CONTENT_DETAILS_TABLE,
 };
 
 module.exports = {

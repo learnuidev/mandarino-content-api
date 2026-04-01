@@ -34,8 +34,14 @@ custom:
     Name: ${cf:nomadmethod-api-${self:provider.stage}.AssetsBucketName}
     Arn: ${cf:nomadmethod-api-${self:provider.stage}.AssetsBucketArn}
 
-  ContentsTable:
+  LegacyContentsTable:
     Name: ${cf:nomadmethod-api-${self:provider.stage}.ContentsTableName}
+    Arn: ${cf:nomadmethod-api-${self:provider.stage}.ContentsTableArn}
+
+  LegacyContentDetailsTable:
+    Name: ${cf:nomadmethod-api-${self:provider.stage}.ContentDetailsTableName}
+    Arn: ${cf:nomadmethod-api-${self:provider.stage}.ContentDetailsTableArn}
+
   CognitoUserPool:
     Arn: ${cf:nomadmethod-api-${self:provider.stage}.CognitoUserPoolArn}
     Id: ${cf:nomadmethod-api-${self:provider.stage}.CognitoUserPoolId}
@@ -70,7 +76,7 @@ functions:
             arn: ${self:custom.CognitoUserPool.Arn}
     environment:
       SERIES_TABLE: !Ref SeriesTable
-      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTable
+      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTableV2
       SOURCE_TABLE: !Ref SourceTable
       USER_ASSETS_TABLE: ${self:custom.UserAssetsTable.Name}
 
@@ -113,7 +119,7 @@ functions:
             arn: ${self:custom.CognitoUserPool.Arn}
     environment:
       SERIES_TABLE: !Ref SeriesTable
-      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTable
+      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTableV2
       SOURCE_TABLE: !Ref SourceTable
       USER_ASSETS_TABLE: ${self:custom.UserAssetsTable.Name}
     iamRoleStatements:
@@ -190,7 +196,7 @@ functions:
             arn: ${self:custom.CognitoUserPool.Arn}
     environment:
       SERIES_TABLE: !Ref SeriesTable
-      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTable
+      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTableV2
       CONTENT_DETAILS_TABLE: !Ref ContentDetailsTable
     iamRoleStatements:
       - Effect: Allow
@@ -204,7 +210,7 @@ functions:
         Resource:
           - !Join
             - "/"
-            - - !GetAtt SeriesContentsTable.Arn
+            - - !GetAtt SeriesContentsTableV2.Arn
               - "index/bySk"
       - Effect: Allow
         Action:
@@ -228,7 +234,7 @@ functions:
             arn: ${self:custom.CognitoUserPool.Arn}
     environment:
       SERIES_TABLE: !Ref SeriesTable
-      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTable
+      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTableV2
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -241,7 +247,7 @@ functions:
         Action:
           - dynamodb:PutItem
         Resource:
-          - !GetAtt SeriesContentsTable.Arn
+          - !GetAtt SeriesContentsTableV2.Arn
 
   remove-episodes:
     handler: functions/series/remove-episodes.handler
@@ -256,7 +262,7 @@ functions:
             arn: ${self:custom.CognitoUserPool.Arn}
     environment:
       SERIES_TABLE: !Ref SeriesTable
-      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTable
+      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTableV2
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -268,7 +274,43 @@ functions:
         Action:
           - dynamodb:DeleteItem
         Resource:
-          - !GetAtt SeriesContentsTable.Arn
+          - !GetAtt SeriesContentsTableV2.Arn
+
+  port-episodes:
+    handler: functions/series/port-episodes.handler
+    events:
+      - http:
+          path: /v1/series/{seriesId}/port-episodes
+          method: POST
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: ${self:custom.CognitoUserPool.Arn}
+    environment:
+      SERIES_TABLE: !Ref SeriesTable
+      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTableV2
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+        Resource:
+          - !GetAtt SeriesTable.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:Query
+        Resource:
+          - !GetAtt SeriesContentsTableV2.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
+            - - ${self:custom.UsersTable.Arn}
+              - "index/byEmail"
 
   add-source:
     handler: functions/sources/add-source.handler
@@ -452,7 +494,7 @@ resources:
           - Key: Name
             Value: mandarino-series-table
 
-    SeriesContentsTable:
+    SeriesContentsTableV2:
       Type: AWS::DynamoDB::Table
       Properties:
         BillingMode: PAY_PER_REQUEST
@@ -462,12 +504,12 @@ resources:
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
-          - AttributeName: sk
+          - AttributeName: seriesId
             AttributeType: S
         GlobalSecondaryIndexes:
-          - IndexName: bySk
+          - IndexName: bySeriesId
             KeySchema:
-              - AttributeName: sk
+              - AttributeName: seriesId
                 KeyType: HASH
               - AttributeName: id
                 KeyType: RANGE
@@ -480,7 +522,7 @@ resources:
           - Key: Environment
             Value: ${self:custom.stage}
           - Key: Name
-            Value: series-contents-table
+            Value: series-contents-table-v2
     ContentDetailsTable:
       Type: AWS::DynamoDB::Table
       Properties:
