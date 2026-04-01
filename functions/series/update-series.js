@@ -4,10 +4,11 @@ const cors = require("@middy/http-cors");
 const { removeNull } = require("../../libs/utils");
 const { getUserByEmail } = require("../../modules/users/get-user-by-email");
 const { getSourceById } = require("../../modules/sources/get-source-by-id");
+
+const { tableNames } = require("../../constants/table-names");
 const {
   getUserAssetById,
-} = require("../../modules/assets/get-user-asset-by-id");
-const { tableNames } = require("../../constants/table-names");
+} = require("../../modules/user-assets/get-user-asset-by-id");
 
 const dynamodb = new AWS.DynamoDB.DocumentClient({
   apiVersion: "2012-08-10",
@@ -15,8 +16,15 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 });
 
 module.exports.handler = middy(async (event) => {
-  const { id, title, topicType, sourceId, backgroundImageAssetId, stats } =
-    JSON.parse(event.body);
+  const {
+    id,
+    title,
+    topicType,
+    sourceId,
+    backgroundImageAssetId,
+    stats,
+    description,
+  } = JSON.parse(event.body);
   const email = event.requestContext.authorizer.claims.email;
 
   const user = await getUserByEmail(email);
@@ -99,6 +107,14 @@ module.exports.handler = middy(async (event) => {
     if (stats) {
       updateParams.UpdateExpression += ", stats = :stats";
       updateParams.ExpressionAttributeValues[":stats"] = stats;
+    }
+
+    if (description !== undefined) {
+      updateParams.UpdateExpression += ", #desc = :description";
+      updateParams.ExpressionAttributeValues[":description"] = description;
+      updateParams.ExpressionAttributeNames =
+        updateParams.ExpressionAttributeNames || {};
+      updateParams.ExpressionAttributeNames["#desc"] = "description";
     }
 
     const result = await dynamodb.update(updateParams).promise();

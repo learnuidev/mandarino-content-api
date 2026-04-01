@@ -17,9 +17,8 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 });
 
 module.exports.handler = middy(async (event) => {
-  const { title, topicType, sourceId, backgroundImageAssetId } = JSON.parse(
-    event.body
-  );
+  const { title, topicType, sourceId, backgroundImageAssetId, description } =
+    JSON.parse(event.body);
   const email = event.requestContext.authorizer.claims.email;
 
   const user = await getUserByEmail(email);
@@ -64,6 +63,7 @@ module.exports.handler = middy(async (event) => {
       id,
       userId: user.id,
       title,
+      description,
       topicType,
       sourceId: source?.id,
       source,

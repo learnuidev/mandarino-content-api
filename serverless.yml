@@ -226,6 +226,51 @@ functions:
         Resource:
           - ${self:custom.UserAssetsTable.Arn}
 
+  get-series-content-details:
+    handler: functions/series/get-series-content-details.handler
+    events:
+      - http:
+          path: /v1/contents/{contentId}
+          method: GET
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: ${self:custom.CognitoUserPool.Arn}
+    environment:
+      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTableV2
+      ENROLLMENTS_TABLE: !Ref EnrollmentsTable
+      USER_ASSETS_TABLE: ${self:custom.UserAssetsTable.Name}
+      USERS_TABLE: ${self:custom.UsersTable.Name}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt SeriesContentsTableV2.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
+            - - !GetAtt EnrollmentsTable.Arn
+              - "index/byUserIdSeriesId"
+          - !Join
+            - "/"
+            - - ${self:custom.UsersTable.Arn}
+              - "index/byEmail"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - ${self:custom.UserAssetsTable.Arn}
+      - Effect: Allow
+        Action:
+          - s3:GetObject
+        Resource:
+          - ${self:custom.AssetsBucket.Arn}/*
+
   add-episodes:
     handler: functions/series/add-episodes.handler
     events:
