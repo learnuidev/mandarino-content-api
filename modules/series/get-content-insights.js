@@ -134,19 +134,14 @@ function addCharacterMetrics(
 }
 
 function calculateRates(newChars, masteryChars, totalChars) {
-  const formatter = new Intl.NumberFormat("en-GB", {
-    style: "percent",
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 2,
-  });
-
+  const total = totalChars || 1;
   return {
-    understandingRate: formatter.format(newChars / (totalChars || 1)),
-    masteryRate: formatter.format(masteryChars / (totalChars || 1)),
+    understandingRate: newChars / total, // e.g. 0.75
+    masteryRate: masteryChars / total, // e.g. 0.42
   };
 }
 
-function listNonHskWords({ content, hskwords }) {
+function listNonHskWords({ content }) {
   // console.log("CONNTENT", content.transcriptions[0]);
 
   const containsWords = content.transcriptions?.[0]?.words?.length > 0;
