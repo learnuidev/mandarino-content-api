@@ -1,245 +1,241 @@
 const totalHskWords = require("../../data/hsk-words").totalHskWords;
 
-function getFrequency({ content, input }) {
-  const transcriptions = content?.transcriptions?.filter((transcription) => {
-    return (transcription?.hanzi || transcription?.input)?.includes(input);
-  });
+const hskWordsMap = require("../../data/hsk-words-map").hskWordsMap;
 
-  return transcriptions?.length || 0;
-}
-
-function filterNonEnglishAlphabets(char) {
-  return /[a-zA-Z]/.test(char) ? char : "";
-}
-
-function filterNonHanYu(char) {
+// === UTILITIES ===
+function filterHanCharacters(char) {
   return /[\u4e00-\u9fff]/.test(char) ? char : "";
 }
 
-function getContentInsightsNew({
-  content,
-  learnedCharacters = {},
-  hskWords = totalHskWords,
-  sortType = "default",
-}) {
-  const lesson = content;
-  const lang = lesson?.lang || lesson?.transcriptions?.[0]?.lang;
+function countWords(text) {
+  return text.split(/\s+/).filter(Boolean).length;
+}
 
-  const transcriptions = lesson?.transcriptions || [];
+function getUniqueChars(texts) {
+  const chars = new Set();
+  texts.forEach((text) => [...text].forEach((char) => chars.add(char)));
+  return chars.size;
+}
 
-  // Calculate totals
-  const allText = transcriptions
-    .map((t) => t?.hanzi || t?.input || "")
-    .join(" ");
+function cleanEnglishWord(word) {
+  if (!word) return "";
+  return word.replaceAll(/[,:?-]/g, "").replace(/^'|'$/g, "");
+}
 
-  const totalSentences = transcriptions.length;
-  const totalWords = allText.split(/\s+/).filter(Boolean).length;
+// === LANGUAGE-SPECIFIC ===
+function extractUniqueCharsForZh(transcriptions) {
+  return [...new Set(transcriptions.map((t) => t?.hanzi || t?.input).join(""))]
+    .join("")
+    .toLocaleLowerCase()
+    .split("")
+    .filter(filterHanCharacters);
+}
 
-  const allUniqueChars = new Set();
-  transcriptions.forEach((t) => {
-    const text = t?.hanzi || t?.input || "";
-    [...text].forEach((char) => allUniqueChars.add(char));
-  });
-  const totalCharacters = allUniqueChars.size;
+function extractUniqueCharsForEn(transcriptions) {
+  return [
+    ...new Set(
+      transcriptions
+        .map((t) => (t?.hanzi || t?.input || "").split(" "))
+        .flat()
+        .map(cleanEnglishWord)
+        .filter(Boolean)
+    ),
+  ];
+}
 
-  // Language-specific unique characters (existing logic)
-  const uniqueCharacters =
-    lang === "zh"
-      ? [
-          ...new Set(
-            transcriptions
-              .map((answer) => answer?.hanzi || answer?.input)
-              .join("")
-          ),
-        ]
-          .join("")
-          .toLocaleLowerCase()
-          .split("")
-          .filter(filterNonHanYu)
-      : lang === "en"
-        ? [
-            ...new Set(
-              transcriptions
-                .map((answer) => answer?.hanzi || answer?.input?.split(" "))
-                .flat()
-                .map((word) => {
-                  let newWord = word
-                    ?.replaceAll(", ", "")
-                    ?.replaceAll(":", "")
-                    ?.replaceAll("-", "")
-                    ?.replaceAll("?", "")
-                    ?.replaceAll(",", "");
+function extractUniqueChars(lang, transcriptions) {
+  return lang === "zh"
+    ? extractUniqueCharsForZh(transcriptions)
+    : extractUniqueCharsForEn(transcriptions);
+}
 
-                  const indexOfSingleQuote = newWord?.indexOf("'");
+// === FREQUENCY & MATCHING ===
+function getFrequency({ content, input }) {
+  return (
+    content?.transcriptions?.filter((t) =>
+      (t?.hanzi || t?.input || "").includes(input)
+    )?.length || 0
+  );
+}
 
-                  if (
-                    indexOfSingleQuote === 0 ||
-                    indexOfSingleQuote + 1 === newWord?.length
-                  ) {
-                    newWord = newWord?.replaceAll("'", "");
-                  }
+function findHskWordsInContent(content) {
+  return totalHskWords.filter((word) =>
+    content.transcriptions.some((t) =>
+      (t?.hanzi || t?.input || "").includes(word.hanzi)
+    )
+  );
+}
 
-                  return newWord;
-                })
-                .filter(Boolean)
-            ),
-          ]
-        : [
-            ...new Set(
-              transcriptions
-                .map((answer) => answer?.hanzi || answer?.input?.split(" "))
-                .flat()
-                .map(filterNonEnglishAlphabets)
-                .filter(Boolean)
-            ),
-          ];
+function addHskWordMetrics(hskWords, content, sortType) {
+  return hskWords
+    .map((word) => {
+      const freq = getFrequency({ content, input: word.hanzi });
+      const transcription = content.transcriptions.find((t) =>
+        (t?.hanzi || t?.input || "").includes(word.hanzi)
+      );
+      const wordIndex =
+        content.transcriptions.findIndex((t) =>
+          (t?.hanzi || t?.input || "").includes(word.hanzi)
+        ) *
+          10 +
+        (transcription?.hanzi || "").indexOf(word.hanzi);
 
-  const totalNewCharacters = uniqueCharacters.filter((char) => {
-    return !!learnedCharacters?.[char];
-  }).length;
+      return { ...word, frequency: freq, wordIndex };
+    })
+    .sort(
+      sortType === "popular"
+        ? (a, b) => b.frequency - a.frequency
+        : (a, b) => a.wordIndex - b.wordIndex
+    );
+}
 
-  const totalMasteryCharacters = uniqueCharacters.filter((char) => {
-    const isLearned = learnedCharacters?.[char];
-    return isLearned?.status?.toLowerCase() === "forgotten";
-  }).length;
-
-  const filteredHskWords = (() => {
-    const res = hskWords
-      .filter((word) => {
-        const transcription = lesson?.transcriptions?.filter(
-          (transcription) => {
-            return (transcription?.hanzi || transcription?.input)?.includes(
-              word?.hanzi
-            );
-          }
-        );
-
-        return transcription?.length > 0;
-      })
-      .map((char) => {
-        const frequency = getFrequency({
-          content: lesson,
-          input: char?.hanzi || char?.input,
-        });
-
-        const transcription = lesson?.transcriptions?.find((transcription) =>
-          (transcription?.hanzi || transcription?.input)?.includes(
-            char?.hanzi || char?.input
-          )
-        );
-
-        const wordIndex =
-          lesson?.transcriptions?.findIndex((transcription) =>
-            (transcription?.hanzi || transcription?.input)?.includes(
-              char?.hanzi || char?.input
-            )
-          ) * 10;
-
-        const characterIndex = (
-          transcription?.hanzi || transcription?.input
-        )?.indexOf(char?.hanzi || char?.input);
-
-        return {
-          ...char,
-          wordIndex: (wordIndex || 0) + (characterIndex || 0),
-          frequency,
-        };
-      });
-
-    if (sortType === "popular") {
-      return res.sort((first, second) => second?.frequency - first?.frequency);
-    }
-    return res.sort((first, second) => first?.wordIndex - second?.wordIndex);
-  })();
-
-  // HSK word categorization (counts only)
-  const hskCounts = {
-    hsk1Words: 0,
-    hsk2Words: 0,
-    hsk3Words: 0,
-    hsk4Words: 0,
-    hsk5Words: 0,
-    hsk6Words: 0,
-    hsk9Words: 0,
+// === AGGREGATORS ===
+function countHskLevels(hskWords) {
+  const counts = {
+    totalHsk1Words: 0,
+    totalHsk2Words: 0,
+    totalHsk3Words: 0,
+    totalHsk4Words: 0,
+    totalHsk5Words: 0,
+    totalHsk6Words: 0,
+    totalHsk9Words: 0,
     nonHskWords: 0,
   };
 
-  filteredHskWords.forEach((word) => {
-    const matchingHskWord = word;
-
-    const level = matchingHskWord.hskLevel;
-    if (level === 1) hskCounts.hsk1Words++;
-    else if (level === 2) hskCounts.hsk2Words++;
-    else if (level === 3) hskCounts.hsk3Words++;
-    else if (level === 4) hskCounts.hsk4Words++;
-    else if (level === 5) hskCounts.hsk5Words++;
-    else if (level === 6) hskCounts.hsk6Words++;
-    else if (level === 9 || level === "9") hskCounts.hsk9Words++;
+  hskWords.forEach((word) => {
+    const level = word.hskLevel;
+    if (level === 1) counts.totalHsk1Words++;
+    else if (level === 2) counts.totalHsk2Words++;
+    else if (level === 3) counts.totalHsk3Words++;
+    else if (level === 4) counts.totalHsk4Words++;
+    else if (level === 5) counts.totalHsk5Words++;
+    else if (level === 6) counts.totalHsk6Words++;
+    else if (level === 9 || level === "9") counts.totalHsk9Words++;
   });
 
-  const uniqueCharactersMemo = (() => {
-    const res = uniqueCharacters.map((char) => {
-      const frequency = getFrequency({
-        content: lesson,
-        input: char?.hanzi || char?.input || char,
-      });
+  return counts;
+}
 
-      const isLearned = learnedCharacters?.[char];
+function addCharacterMetrics(
+  uniqueChars,
+  content,
+  learnedCharacters,
+  sortType
+) {
+  return uniqueChars
+    .map((char) => ({
+      input: char,
+      ...learnedCharacters?.[char],
+      isLearned: !!learnedCharacters?.[char],
+      frequency: getFrequency({ content, input: char }),
+    }))
+    .sort(
+      sortType === "popular" ? (a, b) => b.frequency - a.frequency : () => 0
+    );
+}
 
-      return {
-        input: char,
-        ...isLearned,
-        isLearned: !!isLearned,
-        frequency,
-      };
-    });
-
-    if (sortType === "popular") {
-      return res.sort((first, second) => second?.frequency - first?.frequency);
-    }
-    return res;
-  })();
-
-  const numberFormatter = new Intl.NumberFormat("en-GB", {
+function calculateRates(newChars, masteryChars, totalChars) {
+  const formatter = new Intl.NumberFormat("en-GB", {
     style: "percent",
     minimumFractionDigits: 1,
     maximumFractionDigits: 2,
   });
 
-  const understandingRate = numberFormatter.format(
-    totalNewCharacters / (uniqueCharacters?.length || 1)
+  return {
+    understandingRate: formatter.format(newChars / (totalChars || 1)),
+    masteryRate: formatter.format(masteryChars / (totalChars || 1)),
+  };
+}
+
+function listNonHskWords({ content, hskwords }) {
+  // console.log("CONNTENT", content.transcriptions[0]);
+
+  const containsWords = content.transcriptions?.[0]?.words?.length > 0;
+
+  if (containsWords) {
+    const totalContentWordsRaw = content.transcriptions
+      .map((transcription) => transcription.words)
+      .flat();
+
+    const totalContentWords = totalContentWordsRaw
+      .filter((item) => filterHanCharacters(item.input))
+      .filter((item) => {
+        return !hskWordsMap[item.input];
+      });
+
+    return totalContentWords;
+  }
+  return [];
+}
+
+// === MAIN ORCHESTRATOR ===
+function getContentInsights({
+  content,
+  learnedCharacters = {},
+  hskWords = totalHskWords,
+  sortType = "default",
+}) {
+  const transcriptions = content?.transcriptions || [];
+  const lang = content?.lang || transcriptions[0]?.lang;
+
+  // Totals
+  const allText = transcriptions
+    .map((t) => t?.hanzi || t?.input || "")
+    .join(" ");
+  const totals = {
+    totalSentences: transcriptions.length,
+    totalWords: countWords(allText),
+    totalCharacters: getUniqueChars(
+      transcriptions.map((t) => t?.hanzi || t?.input || "")
+    ),
+  };
+
+  // Characters
+  const uniqueCharacters = extractUniqueChars(lang, transcriptions);
+  const totalNewCharacters = uniqueCharacters.filter(
+    (char) => !!learnedCharacters[char]
+  ).length;
+  const totalMasteryCharacters = uniqueCharacters.filter(
+    (char) => learnedCharacters?.[char]?.status?.toLowerCase() === "forgotten"
+  ).length;
+
+  const rates = calculateRates(
+    totalNewCharacters,
+    totalMasteryCharacters,
+    uniqueCharacters.length
   );
 
-  const masteryRate = numberFormatter.format(
-    totalMasteryCharacters / (uniqueCharacters?.length || 1)
+  // HSK
+  const filteredHskWords = findHskWordsInContent(content);
+  const hskWordsWithMetrics = addHskWordMetrics(
+    filteredHskWords,
+    content,
+    sortType
   );
+  const hskCounts = countHskLevels(hskWordsWithMetrics);
+
+  // Character memo
+  const uniqueCharactersMemo = addCharacterMetrics(
+    uniqueCharacters,
+    content,
+    learnedCharacters,
+    sortType
+  );
+
+  const nonHskWords = listNonHskWords({ content, hskWords });
 
   return {
-    // Totals
-    totalCharacters,
-    totalSentences,
-    totalWords,
-
-    // HSK word counts (numbers only)
-    hsk1Words: hskCounts.hsk1Words,
-    hsk2Words: hskCounts.hsk2Words,
-    hsk3Words: hskCounts.hsk3Words,
-    hsk4Words: hskCounts.hsk4Words,
-    hsk5Words: hskCounts.hsk5Words,
-    hsk6Words: hskCounts.hsk6Words,
-    hsk9Words: hskCounts.hsk9Words,
-    nonHskWords: hskCounts.nonHskWords,
-
-    // Existing insights
+    ...totals,
+    ...hskCounts,
     uniqueCharacters,
-    understandingRate,
     totalNewCharacters,
-    filteredHskWords,
+    ...rates,
+    filteredHskWords: hskWordsWithMetrics,
     uniqueCharactersMemo,
-    masteryRate,
+    totalNonHskWords: nonHskWords.length,
   };
 }
 
 module.exports = {
-  getContentInsights: getContentInsightsNew,
+  getContentInsights,
 };
