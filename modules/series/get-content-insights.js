@@ -99,7 +99,6 @@ function countHskLevels(hskWords) {
     totalHsk5Words: 0,
     totalHsk6Words: 0,
     totalHsk9Words: 0,
-    nonHskWords: 0,
   };
 
   hskWords.forEach((word) => {
@@ -225,13 +224,14 @@ function getContentInsights({
   const nonHskWords = listNonHskWords({ content, hskWords });
 
   return {
+    totalNewCharacters,
+    filteredHskWords: hskWordsWithMetrics,
+    uniqueCharacters: uniqueCharactersMemo,
+    nonHskWords,
+
+    ...rates,
     ...totals,
     ...hskCounts,
-    uniqueCharacters,
-    totalNewCharacters,
-    ...rates,
-    filteredHskWords: hskWordsWithMetrics,
-    uniqueCharactersMemo,
     totalNonHskWords: nonHskWords.length,
   };
 }
