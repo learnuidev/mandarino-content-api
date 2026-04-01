@@ -394,6 +394,7 @@ functions:
       - Effect: Allow
         Action:
           - dynamodb:BatchGetItem
+          - dynamodb:GetItem
         Resource:
           - ${self:custom.LegacyContentsTable.Arn}
       - Effect: Allow
