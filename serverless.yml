@@ -510,6 +510,151 @@ functions:
             - "/"
             - - ${self:custom.UsersTable.Arn}
               - "index/byEmail"
+
+  list-enrollments:
+    handler: functions/enrollments/list-enrollments.handler
+    events:
+      - http:
+          path: /v1/enrollments
+          method: GET
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: ${self:custom.CognitoUserPool.Arn}
+    environment:
+      ENROLLMENTS_TABLE: !Ref EnrollmentsTable
+      SERIES_TABLE: !Ref SeriesTable
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
+            - - !GetAtt EnrollmentsTable.Arn
+              - "index/byUserId"
+      - Effect: Allow
+        Action:
+          - dynamodb:BatchGetItem
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt SeriesTable.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
+            - - ${self:custom.UsersTable.Arn}
+              - "index/byEmail"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - ${self:custom.UserAssetsTable.Arn}
+
+  get-enrollment:
+    handler: functions/enrollments/get-enrollment.handler
+    events:
+      - http:
+          path: /v1/enrollments/{enrollmentId}
+          method: GET
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: ${self:custom.CognitoUserPool.Arn}
+    environment:
+      ENROLLMENTS_TABLE: !Ref EnrollmentsTable
+      SERIES_TABLE: !Ref SeriesTable
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt EnrollmentsTable.Arn
+          - !GetAtt SeriesTable.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
+            - - ${self:custom.UsersTable.Arn}
+              - "index/byEmail"
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - ${self:custom.UserAssetsTable.Arn}
+
+  create-enrollment:
+    handler: functions/enrollments/create-enrollment.handler
+    events:
+      - http:
+          path: /v1/enrollments
+          method: POST
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: ${self:custom.CognitoUserPool.Arn}
+    environment:
+      ENROLLMENTS_TABLE: !Ref EnrollmentsTable
+      SERIES_TABLE: !Ref SeriesTable
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource:
+          - !GetAtt EnrollmentsTable.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt SeriesTable.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
+            - - ${self:custom.UsersTable.Arn}
+              - "index/byEmail"
+
+  delete-enrollment:
+    handler: functions/enrollments/delete-enrollment.handler
+    events:
+      - http:
+          path: /v1/enrollments/{seriesId}
+          method: DELETE
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: ${self:custom.CognitoUserPool.Arn}
+    environment:
+      ENROLLMENTS_TABLE: !Ref EnrollmentsTable
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
+            - - !GetAtt EnrollmentsTable.Arn
+              - "index/byUserId"
+          - !GetAtt EnrollmentsTable.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
+            - - ${self:custom.UsersTable.Arn}
+              - "index/byEmail"
 resources:
   Resources:
     SourceTable:
@@ -658,3 +803,42 @@ resources:
             Value: ${self:custom.stage}
           - Key: Name
             Value: content-details-table
+
+    EnrollmentsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        BillingMode: PAY_PER_REQUEST
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: seriesId
+            AttributeType: S
+        GlobalSecondaryIndexes:
+          - IndexName: byUserId
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+              - AttributeName: id
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: byUserIdSeriesId
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+              - AttributeName: seriesId
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+        Tags:
+          - Key: Environment
+            Value: ${self:custom.stage}
+          - Key: Name
+            Value: mandarino-enrollments-table

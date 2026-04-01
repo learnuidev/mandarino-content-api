@@ -13,6 +13,8 @@ const tableNames = {
 
   legacyContentsTable: process.env.LEGACY_CONTENTS_TABLE,
   legacyContentDetailsTable: process.env.LEGACY_CONTENT_DETAILS_TABLE,
+
+  enrollmentsTable: process.env.ENROLLMENTS_TABLE,
 };
 
 module.exports = {
