@@ -530,6 +530,7 @@ functions:
         Action:
           - dynamodb:Query
         Resource:
+          - !GetAtt EnrollmentsTable.Arn
           - !Join
             - "/"
             - - !GetAtt EnrollmentsTable.Arn
