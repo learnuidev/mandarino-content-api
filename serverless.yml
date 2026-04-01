@@ -138,6 +138,14 @@ functions:
           - dynamodb:GetItem
         Resource:
           - ${self:custom.UserAssetsTable.Arn}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
+            - - ${self:custom.UsersTable.Arn}
+              - "index/byEmail"
 
   list-series:
     handler: functions/series/list-series.handler
