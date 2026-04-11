@@ -9,6 +9,10 @@ const {
 const {
   getEnrollmentByUserAndSeries,
 } = require("../../modules/enrollments/get-enrollment-by-user-and-series");
+const {
+  getUserAssetById,
+} = require("../../modules/user-assets/get-user-asset-by-id");
+const { getSeriesById } = require("../../modules/series/get-series-by-id");
 
 const dynamodb = new AWS.DynamoDB.DocumentClient({
   apiVersion: "2012-08-10",
@@ -52,7 +56,7 @@ module.exports.handler = middy(async (event) => {
 
     const enrollment = await getEnrollmentByUserAndSeries(
       userId,
-      content.seriesId,
+      content.seriesId
     );
 
     if (!enrollment) {
@@ -67,10 +71,19 @@ module.exports.handler = middy(async (event) => {
 
     const contentDetails = await getSeriesContentDetails({ contentId });
 
+    const series = await getSeriesById(content.seriesId);
+
+    const asset = await getUserAssetById(series.backgroundImageAssetId);
+
     return {
       statusCode: 200,
       body: JSON.stringify({
-        content: contentDetails,
+        content: {
+          ...contentDetails,
+          backgroundImage: asset.sourceUrl,
+        },
+
+        series,
       }),
     };
   } catch (err) {

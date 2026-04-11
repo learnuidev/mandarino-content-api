@@ -255,6 +255,11 @@ functions:
         Action:
           - dynamodb:GetItem
         Resource:
+          - !GetAtt SeriesTable.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
           - !GetAtt SeriesContentsTableV2.Arn
       - Effect: Allow
         Action:
