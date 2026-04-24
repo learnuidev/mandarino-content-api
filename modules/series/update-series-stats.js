@@ -1,5 +1,5 @@
 const { tableNames } = require("../../constants/table-names");
-const { getContentDetailById } = require("./get-content-details-by-id");
+const { getContentDetailByIdV2 } = require("./get-content-details-by-id.v2");
 const { getContentInsights } = require("./get-content-insights");
 const { getSeriesById } = require("./get-series-by-id");
 const { listEpisodesBySeriesId } = require("./list-episodes-by-series-id");
@@ -46,7 +46,7 @@ const updateSeriesStats = async ({ seriesId }) => {
   }
 
   for (const episode of episodes) {
-    const contentDetails = await getContentDetailById({
+    const contentDetails = await getContentDetailByIdV2({
       id: episode.id,
       tableName: tableNames.seriesContentsTable,
     });
@@ -93,8 +93,6 @@ const updateSeriesStats = async ({ seriesId }) => {
 
     seriesHsk9Words = [...new Set([...seriesHsk9Words, ...hsk9Words])];
 
-    console.log("NON HSK WORDS", nonHskWords);
-
     seriesNoNHskWords = [...new Set([...seriesNoNHskWords, ...nonHskWords])];
   }
 
@@ -123,7 +121,7 @@ const updateSeriesStats = async ({ seriesId }) => {
   return stats;
 };
 
-// updateSeriesStats({ seriesId: "01KN2NC2KGY39MRWTERGTTFXTD" }).then((resp) => {
+// updateSeriesStats({ seriesId: "01KQ01PR3XHRGR72A3VJM9HX66" }).then((resp) => {
 //   console.log("UPDATE STATS", resp);
 // });
 

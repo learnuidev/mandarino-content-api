@@ -1,7 +1,7 @@
 const AWS = require("aws-sdk");
 const middy = require("@middy/core");
 const cors = require("@middy/http-cors");
-const { removeNull } = require("../../libs/utils");
+
 const { getUserByEmail } = require("../../modules/users/get-user-by-email");
 const { getSourceById } = require("../../modules/sources/get-source-by-id");
 
@@ -97,7 +97,7 @@ module.exports.handler = middy(async (event) => {
     }
 
     if (backgroundImageAssetId) {
-      const asset = await getUserAssetById(backgroundImageAssetId);
+      // const asset = await getUserAssetById(backgroundImageAssetId);
       updateParams.UpdateExpression +=
         ", backgroundImageAssetId = :backgroundImageAssetId";
       updateParams.ExpressionAttributeValues[":backgroundImageAssetId"] =
