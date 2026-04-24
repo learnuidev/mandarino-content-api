@@ -9,7 +9,7 @@ const dynamodb = new DocumentClient({
   region: "us-east-1",
 });
 
-const LEGACY_CONTENTS_TABLE = tableNames.legacyContentsTable;
+const LEGACY_CONTENTS_TABLE = tableNames.contentsTableV2;
 
 function chunkArray(array, size) {
   const result = [];

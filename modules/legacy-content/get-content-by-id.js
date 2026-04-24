@@ -18,7 +18,7 @@ const item = {
 
 const getLegacyContentById = async (id) => {
   const seriesParams = {
-    TableName: tableNames.legacyContentsTable,
+    TableName: tableNames.contentsTableV2,
     Key: { id },
   };
 

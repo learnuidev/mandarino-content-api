@@ -21,7 +21,7 @@ const item = {
 
 const getContentDetailById = async ({
   id,
-  tableName = tableNames.legacyContentDetailsTable,
+  tableName = tableNames.contentDetailsTable,
 }) => {
   const content = await getLegacyContentById(id);
 
@@ -53,7 +53,7 @@ const getContentDetailById = async ({
 
   if (contentDetail?.mediaTranscriptionsId) {
     const userAsset = await getUserAssetById(
-      contentDetail?.mediaTranscriptionsId
+      contentDetail?.mediaTranscriptionsId,
     );
 
     const presignedUrlResp = await getPresignedUrl({

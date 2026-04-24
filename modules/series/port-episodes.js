@@ -68,21 +68,6 @@ const portEpisodes = async ({ seriesId, contentIds }) => {
       totalNonHskWords,
     } = insights;
 
-    // totalSeriesCharacters = [
-    //   ...new Set([...totalSeriesCharacters, ...uniqueCharacters]),
-    // ];
-
-    // totalSeriesWords = [
-    //   ...new Set([...totalSeriesWords, ...hskWords, ...nonHskWords]),
-    // ];
-    // totalSeriesSentences = [
-    //   ...new Set([...totalSeriesSentences, ...sentences]),
-    // ];
-
-    // TODO: Calculate total words
-
-    // TODO. Calculate total sentences
-
     const stats = {
       averageRating: 0,
       totalPlays: 0,
@@ -105,25 +90,10 @@ const portEpisodes = async ({ seriesId, contentIds }) => {
 
     const newParams = {
       id: content.id,
-      sortOrder,
-      topicType: series.topicType,
-      lang: content.lang,
-      format: content.type,
-      status: content.status,
-      title: content.title,
-      mediaTranscriptionsId: contentDetails.mediaTranscriptionsId,
-      mediaId: content.audioId,
-      youtubeUrl: content.audio,
       seriesId: series.id,
-      createdAt: contentDetails.createdAt,
-      updatedAt: contentDetails.updatedAt,
-
+      sortOrder,
       stats,
     };
-
-    if (content.type === "youtube") {
-      newParams.youtubeUrl = content.audio;
-    }
 
     sortOrder = sortOrder + 1;
 

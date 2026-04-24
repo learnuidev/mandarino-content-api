@@ -11,8 +11,8 @@ const tableNames = {
   sourceTable: process.env.SOURCE_TABLE,
   userAssetsTable: process.env.USER_ASSETS_TABLE,
 
-  legacyContentsTable: process.env.LEGACY_CONTENTS_TABLE,
-  legacyContentDetailsTable: process.env.LEGACY_CONTENT_DETAILS_TABLE,
+  contentsTableV2: process.env.LEGACY_CONTENTS_TABLE,
+  contentDetailsTable: process.env.LEGACY_CONTENT_DETAILS_TABLE,
 
   enrollmentsTable: process.env.ENROLLMENTS_TABLE,
 };
