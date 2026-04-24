@@ -37,7 +37,7 @@ const listContentsByContentIds = async (episodes) => {
   }
 
   return respChunked.map((item) => {
-    const episode = episodes.map((e) => e.id === item.id);
+    const episode = episodes.find((e) => e.id === item.id);
 
     return {
       ...episode,

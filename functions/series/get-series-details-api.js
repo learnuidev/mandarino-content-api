@@ -29,7 +29,6 @@ const getSeriesDetailsApi = async ({ email, seriesId }) => {
 
   const asset = await getUserAssetById(series.backgroundImageAssetId);
 
-  console.log("TABLE NAMES", tableNames);
   const episodesParams = {
     TableName: tableNames.seriesContentsTable,
     IndexName: "bySeriesId",
@@ -43,7 +42,7 @@ const getSeriesDetailsApi = async ({ email, seriesId }) => {
 
   const seriesEpisodes = episodesResult?.Items;
 
-  // console.log("SE", seriesEpisodes);
+  console.log("SE", seriesEpisodes);
   const episodes = await listContentsByContentIds(seriesEpisodes);
 
   return {

@@ -484,6 +484,48 @@ functions:
         Resource:
           - ${self:custom.AssetsBucket.Arn}/*
 
+  update-episode-order:
+    handler: functions/series/update-episode-order.handler
+    events:
+      - http:
+          path: /v1/series/{seriesId}/episode-order
+          method: POST
+          cors: true
+          authorizer:
+            name: CognitoAuthorizer
+            type: COGNITO_USER_POOLS
+            arn: ${self:custom.CognitoUserPool.Arn}
+    environment:
+      SERIES_TABLE: !Ref SeriesTable
+      SERIES_CONTENTS_TABLE: !Ref SeriesContentsTableV2
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - !GetAtt SeriesTable.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource:
+          - !GetAtt SeriesContentsTableV2.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
+            - - !GetAtt SeriesContentsTableV2.Arn
+              - "index/bySeriesId"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - !Join
+            - "/"
+            - - ${self:custom.UsersTable.Arn}
+              - "index/byEmail"
+
   add-source:
     handler: functions/sources/add-source.handler
     events:
