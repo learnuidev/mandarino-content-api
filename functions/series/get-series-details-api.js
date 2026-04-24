@@ -47,7 +47,7 @@ const getSeriesDetailsApi = async ({ email, seriesId }) => {
 
   return {
     series: { ...series, backgroundImage: asset.sourceUrl },
-    episodes: episodes || [],
+    episodes: episodes?.sort((a, b) => a?.sortOrder - b?.sortOrder) || [],
   };
 };
 
