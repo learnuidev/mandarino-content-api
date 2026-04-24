@@ -29,6 +29,7 @@ const getSeriesDetailsApi = async ({ email, seriesId }) => {
 
   const asset = await getUserAssetById(series.backgroundImageAssetId);
 
+  console.log("TABLE NAMES", tableNames);
   const episodesParams = {
     TableName: tableNames.seriesContentsTable,
     IndexName: "bySeriesId",
@@ -40,8 +41,9 @@ const getSeriesDetailsApi = async ({ email, seriesId }) => {
 
   const episodesResult = await dynamodb.query(episodesParams).promise();
 
-  const seriesEpisodes = episodesResult?.Items?.map((episode) => episode.id);
+  const seriesEpisodes = episodesResult?.Items;
 
+  // console.log("SE", seriesEpisodes);
   const episodes = await listContentsByContentIds(seriesEpisodes);
 
   return {
@@ -54,9 +56,9 @@ module.exports = {
   getSeriesDetailsApi,
 };
 
-getSeriesDetailsApi({
-  email: "learnuidev@gmail.com",
-  seriesId: "01KN2NC2KGY39MRWTERGTTFXTD",
-}).then((resp) => {
-  console.log("yoo", resp);
-});
+// getSeriesDetailsApi({
+//   email: "learnuidev@gmail.com",
+//   seriesId: "01KQ01PR3XHRGR72A3VJM9HX66",
+// }).then((resp) => {
+//   console.log("yoo", resp);
+// });

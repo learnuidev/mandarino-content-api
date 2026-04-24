@@ -206,6 +206,8 @@ functions:
       SERIES_TABLE: !Ref SeriesTable
       SERIES_CONTENTS_TABLE: !Ref SeriesContentsTableV2
       CONTENT_DETAILS_TABLE: !Ref ContentDetailsTable
+      LEGACY_CONTENTS_TABLE: ${self:custom.LegacyContentsTable.Name}
+      LEGACY_CONTENT_DETAILS_TABLE: ${self:custom.LegacyContentDetailsTable.Name}
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -228,6 +230,12 @@ functions:
             - "/"
             - - ${self:custom.UsersTable.Arn}
               - "index/byEmail"
+      - Effect: Allow
+        Action:
+          - dynamodb:BatchGetItem
+          - dynamodb:GetItem
+        Resource:
+          - ${self:custom.LegacyContentsTable.Arn}
       - Effect: Allow
         Action:
           - dynamodb:GetItem
