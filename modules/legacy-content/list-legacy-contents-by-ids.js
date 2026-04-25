@@ -26,7 +26,6 @@ const sampleResponse = [
     createdAt: 1775004831037,
     id: "ec366e39-ec00-5856-9640-f36f52a9b21d",
     lang: "zh",
-    processingStatus: "SAVED_INITIAL_DATA",
     progress: 1,
     status: "TRANSLATED",
     title: "第1集-三根猴毛",
